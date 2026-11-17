@@ -9,8 +9,8 @@ Um **Launcher Android nativo** em Kotlin + Jetpack Compose com aparência fiel a
   - Barra de status com antena/sinal, ícone de busca rápida, lanterna, Wi-Fi, setas de dados e bateria com porcentagem real.
   - Suporte a **Papel de Parede**: presets retrô (*Pixel Grid*, *Retro Horizon*) ou foto própria da galeria do aparelho.
   - Data centralizada, faixa de atalhos rápidos favoritos, divisória horizontal com aba angular exibindo o relógio em tempo real e softkeys (`Go to`, `Menu`, `Setting`).
-- **Sons Retrô Nokia (Sintetizador Piezo PCM)**:
-  - Áudio sintetizado em tempo real (canal de mídia, independente do som de toque do sistema) com tons distintos para teclas T9 (`0–9`, `*`, `#`), navegação, confirmação, retorno, chamada, lanterna, acorde de inicialização e o toque clássico **Nokia Tune (Gran Vals)**.
+- **Sons Reais da Nokia**:
+  - Efeitos sonoros originais de teclado e sistema Nokia (`res/raw/*.ogg`) reproduzidos no canal de mídia com `SoundPool` e `MediaPlayer`, incluindo o toque clássico **Nokia Tune**.
 - **Menu / App Drawer & Busca**:
   - Grade de 4 colunas com os ícones e nomes reais dos apps instalados no dispositivo.
   - Barra superior com ícone de busca interativa por texto e filtro rápido pelo teclado **T9**.
@@ -21,14 +21,15 @@ Um **Launcher Android nativo** em Kotlin + Jetpack Compose com aparência fiel a
   - Discagem direta pela tela inicial (pressione o botão verde para abrir o discador).
   - Segurar `1–9` na tela inicial abre os atalhos rápidos favoritos; segurar `0` liga/desliga a lanterna.
 - **Jogo da Cobrinha (Snake II)**:
-  - Clássico *Snake II* jogável dentro do próprio visor LCD usando o D-Pad ou teclas `2 / 4 / 6 / 8` e `5`, com recorde salvo localmente e efeitos sonoros retrô.
-- **Multi-idioma e Atalhos Rápidos**:
+  - Clássico *Snake II* em grade fina `34×20` dentro do próprio visor LCD, com 5 níveis de velocidade configuráveis (`1 - Muito Lento` até `5 - Turbo`), jogável pelo D-Pad ou teclas `2 / 4 / 6 / 8` e `5`.
+- **Multi-idioma, Atalhos e Aviso de Atualização**:
   - Troca de idioma em tempo real nas configurações (*Auto*, *Português*, *English*, *Español*).
   - Gerenciador dedicado de atalhos rápidos (também acessível segurando o ícone no Menu ou pela tecla `#`).
+  - Verificação automática e manual de novas versões via `version.json`, exibindo aviso direto na tela inicial e nas configurações.
 
 ## Instalação (APK)
 
-Baixe o arquivo `NokiaRetroLauncher-v1.1.0-release.apk` na aba **Releases** deste repositório e instale no Android (API 24+ / Android 7.0 ao 15).
+Baixe o arquivo `NokiaRetroLauncher-v1.2.0-release.apk` na aba **Releases** deste repositório e instale no Android (API 24+ / Android 7.0 ao 15).
 
 ## Compilação Local
 

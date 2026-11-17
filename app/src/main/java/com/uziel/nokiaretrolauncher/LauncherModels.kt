@@ -152,3 +152,22 @@ data class DeviceStatus(
 enum class DpadDirection {
     UP, DOWN, LEFT, RIGHT, CENTER
 }
+
+enum class SnakeSpeed(
+    val level: Int,
+    val delayMs: Long,
+    val titleRes: Int
+) {
+    VERY_SLOW(1, 320L, R.string.snake_speed_1),
+    SLOW(2, 240L, R.string.snake_speed_2),
+    NORMAL(3, 180L, R.string.snake_speed_3),
+    FAST(4, 130L, R.string.snake_speed_4),
+    TURBO(5, 90L, R.string.snake_speed_5)
+}
+
+data class UpdateInfo(
+    val version: String,
+    val versionCode: Int,
+    val apkUrl: String,
+    val releaseUrl: String
+)

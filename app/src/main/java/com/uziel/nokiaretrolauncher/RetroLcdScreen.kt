@@ -89,6 +89,8 @@ fun RetroLcdScreen(
     shortcutPickerItems: List<Pair<String, String>>,
     selectedShortcutPickerIndex: Int,
     snakeController: SnakeController,
+    snakeSpeed: SnakeSpeed,
+    availableUpdate: UpdateInfo?,
     torchOn: Boolean,
     onOpenGoTo: () -> Unit,
     onOpenMenu: () -> Unit,
@@ -100,8 +102,10 @@ fun RetroLcdScreen(
     onLaunchApp: (AppEntry) -> Unit,
     onToggleShortcut: (AppEntry) -> Unit,
     onToggleShortcutByIndex: (Int) -> Unit,
+    onCycleSnakeSpeed: () -> Unit,
     onSnakeEat: () -> Unit,
     onSnakeDie: () -> Unit,
+    onOpenUpdate: () -> Unit,
     onExitSubScreen: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -119,11 +123,13 @@ fun RetroLcdScreen(
                     status = status,
                     dialBuffer = dialBuffer,
                     shortcutApps = shortcutApps,
+                    availableUpdate = availableUpdate,
                     torchOn = torchOn,
                     onOpenGoTo = onOpenGoTo,
                     onOpenMenu = onOpenMenu,
                     onOpenSearch = onOpenSearch,
                     onOpenSettings = onOpenSettings,
+                    onOpenUpdate = onOpenUpdate,
                     onLaunchApp = onLaunchApp
                 )
             }
@@ -190,6 +196,8 @@ fun RetroLcdScreen(
                 SnakeLcdScreen(
                     controller = snakeController,
                     theme = theme,
+                    speed = snakeSpeed,
+                    onCycleSpeed = onCycleSnakeSpeed,
                     onEat = onSnakeEat,
                     onDie = onSnakeDie,
                     onExit = onExitSubScreen
@@ -312,11 +320,13 @@ private fun HomeLcdContent(
     status: DeviceStatus,
     dialBuffer: String,
     shortcutApps: List<AppEntry>,
+    availableUpdate: UpdateInfo?,
     torchOn: Boolean,
     onOpenGoTo: () -> Unit,
     onOpenMenu: () -> Unit,
     onOpenSearch: () -> Unit,
     onOpenSettings: () -> Unit,
+    onOpenUpdate: () -> Unit,
     onLaunchApp: (AppEntry) -> Unit
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
@@ -414,6 +424,31 @@ private fun HomeLcdContent(
                         textAlign = TextAlign.Center,
                         modifier = Modifier.padding(bottom = if (shortcutApps.isNotEmpty()) 8.dp else 16.dp)
                     )
+
+                    if (availableUpdate != null) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 6.dp)
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(theme.tabBackground)
+                                .border(1.dp, theme.ink, RoundedCornerShape(4.dp))
+                                .clickable(onClick = onOpenUpdate)
+                                .padding(horizontal = 8.dp, vertical = 4.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = tr(R.string.update_banner_home, availableUpdate.version),
+                                color = theme.tabText,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = FontFamily.Monospace,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
 
                     if (shortcutApps.isNotEmpty()) {
                         LazyRow(

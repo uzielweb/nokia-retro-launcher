@@ -11,8 +11,8 @@ android {
         applicationId = "com.uziel.nokiaretrolauncher"
         minSdk = 24
         targetSdk = 34
-        versionCode = 102
-        versionName = "1.1.1"
+        versionCode = 103
+        versionName = "1.2.0"
     }
 
     packaging {

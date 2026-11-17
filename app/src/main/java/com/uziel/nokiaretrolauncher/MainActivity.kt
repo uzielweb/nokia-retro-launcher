@@ -130,15 +130,19 @@ private fun NokiaLauncherContent(
     var themeIndex by remember { mutableIntStateOf(prefs.getInt("lcd_theme", 0)) }
     var backlightIndex by remember { mutableIntStateOf(prefs.getInt("keypad_backlight", 0)) }
     var wallpaperIndex by remember { mutableIntStateOf(prefs.getInt("wallpaper_mode", 0)) }
+    var snakeSpeedIndex by remember { mutableIntStateOf(prefs.getInt("snake_speed", SnakeSpeed.SLOW.ordinal)) }
     var hapticsEnabled by remember { mutableStateOf(prefs.getBoolean("haptics", true)) }
     var soundEnabled by remember { mutableStateOf(prefs.getBoolean("retro_sound", true)) }
 
     val currentTheme = LcdTheme.entries[themeIndex.coerceIn(0, LcdTheme.entries.lastIndex)]
     val currentBacklight = KeypadBacklight.entries[backlightIndex.coerceIn(0, KeypadBacklight.entries.lastIndex)]
     val currentWallpaperMode = WallpaperMode.entries[wallpaperIndex.coerceIn(0, WallpaperMode.entries.lastIndex)]
+    val currentSnakeSpeed = SnakeSpeed.entries[snakeSpeedIndex.coerceIn(0, SnakeSpeed.entries.lastIndex)]
     val backlightColor = currentBacklight.resolveColor(currentTheme)
 
     var customWallpaper by remember { mutableStateOf<ImageBitmap?>(null) }
+    var availableUpdate by remember { mutableStateOf<UpdateInfo?>(null) }
+    var checkingUpdate by remember { mutableStateOf(false) }
     var shortcutPackageList by remember { mutableStateOf(SystemBridge.loadShortcutPackages(prefs)) }
     val shortcutPackagesSet = remember(shortcutPackageList) { shortcutPackageList.toSet() }
 
@@ -218,6 +222,7 @@ private fun NokiaLauncherContent(
         customWallpaper = loadedWp
         val loaded = withContext(Dispatchers.IO) { SystemBridge.loadInstalledApps(baseContext) }
         allApps = loaded
+        availableUpdate = withContext(Dispatchers.IO) { SystemBridge.checkForUpdate() }
     }
 
     DisposableEffect(lifecycleOwner) {
@@ -285,6 +290,11 @@ private fun NokiaLauncherContent(
         feedback(RetroSound.SELECT)
     }
 
+    fun cycleSnakeSpeed() {
+        snakeSpeedIndex = (snakeSpeedIndex + 1) % SnakeSpeed.entries.size
+        prefs.edit().putInt("snake_speed", snakeSpeedIndex).apply()
+    }
+
     val goToItems: List<Pair<String, () -> Unit>> = buildList {
         shortcutApps.forEach { app ->
             add("★ ${app.label}" to {
@@ -343,19 +353,23 @@ private fun NokiaLauncherContent(
         ) {
             val nextIdx = (wallpaperIndex + 1) % WallpaperMode.entries.size
             val nextMode = WallpaperMode.entries[nextIdx]
-            if (nextMode == WallpaperMode.CUSTOM_IMAGE && customWallpaper == null) {
+            if (nextMode == WallpaperMode.CUSTOM_IMAGE) {
+                if (customWallpaper != null) {
+                    wallpaperIndex = nextIdx
+                    prefs.edit().putInt("wallpaper_mode", wallpaperIndex).apply()
+                }
                 runCatching { wallpaperPickerLauncher.launch("image/*") }
             } else {
                 wallpaperIndex = nextIdx
                 prefs.edit().putInt("wallpaper_mode", wallpaperIndex).apply()
             }
+            Unit
         },
         Triple(
-            tr(R.string.setting_pick_wallpaper),
-            tr(R.string.wallpaper_pick_action)
+            tr(R.string.setting_snake_speed),
+            tr(currentSnakeSpeed.titleRes)
         ) {
-            runCatching { wallpaperPickerLauncher.launch("image/*") }
-            Unit
+            cycleSnakeSpeed()
         },
         Triple(
             tr(R.string.setting_language),
@@ -392,6 +406,25 @@ private fun NokiaLauncherContent(
         ) {
             selectedShortcutPickerIndex = 0
             screenMode = ScreenMode.PICK_SHORTCUT
+        },
+        Triple(
+            tr(R.string.setting_check_update),
+            when {
+                checkingUpdate -> tr(R.string.update_checking)
+                availableUpdate != null -> tr(R.string.update_available_badge, availableUpdate!!.version)
+                else -> tr(R.string.update_up_to_date, SystemBridge.CURRENT_VERSION_NAME)
+            }
+        ) {
+            val update = availableUpdate
+            if (update != null) {
+                SystemBridge.openUrl(baseContext, update.apkUrl)
+            } else if (!checkingUpdate) {
+                checkingUpdate = true
+                scope.launch {
+                    availableUpdate = withContext(Dispatchers.IO) { SystemBridge.checkForUpdate() }
+                    checkingUpdate = false
+                }
+            }
         },
         Triple(
             tr(R.string.setting_default_launcher),
@@ -457,6 +490,8 @@ private fun NokiaLauncherContent(
             shortcutPickerItems = shortcutPickerItems,
             selectedShortcutPickerIndex = selectedShortcutPickerIndex,
             snakeController = snakeController,
+            snakeSpeed = currentSnakeSpeed,
+            availableUpdate = availableUpdate,
             torchOn = torchOn,
             onOpenGoTo = {
                 feedback(RetroSound.SELECT)
@@ -508,11 +543,21 @@ private fun NokiaLauncherContent(
             onToggleShortcutByIndex = { idx ->
                 allApps.getOrNull(idx)?.let { toggleShortcut(it) }
             },
+            onCycleSnakeSpeed = {
+                feedback(RetroSound.SELECT)
+                cycleSnakeSpeed()
+            },
             onSnakeEat = {
                 if (soundEnabled) RetroSoundEngine.play(baseContext, RetroSound.SNAKE_EAT)
             },
             onSnakeDie = {
                 if (soundEnabled) RetroSoundEngine.play(baseContext, RetroSound.SNAKE_DIE)
+            },
+            onOpenUpdate = {
+                availableUpdate?.let {
+                    feedback(RetroSound.SELECT)
+                    SystemBridge.openUrl(baseContext, it.apkUrl)
+                }
             },
             onExitSubScreen = {
                 feedback(RetroSound.BACK)
@@ -710,6 +755,7 @@ private fun NokiaLauncherContent(
                             "4" -> snakeController.steer(DpadDirection.LEFT)
                             "6" -> snakeController.steer(DpadDirection.RIGHT)
                             "5" -> snakeController.togglePauseOrRestart()
+                            "*", "#" -> cycleSnakeSpeed()
                         }
                     }
                     else -> Unit

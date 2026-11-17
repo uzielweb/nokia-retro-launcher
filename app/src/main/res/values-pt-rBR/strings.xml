@@ -87,4 +87,18 @@
     <string name="cd_dpad_right">Configurações</string>
     <string name="cd_dpad_ok">OK / Menu</string>
     <string name="dpad_ok_label">OK</string>
+
+    <string name="setting_snake_speed">Veloc. da Cobrinha</string>
+    <string name="snake_speed_1">1 - Muito Lento</string>
+    <string name="snake_speed_2">2 - Lento</string>
+    <string name="snake_speed_3">3 - Normal</string>
+    <string name="snake_speed_4">4 - Rápido</string>
+    <string name="snake_speed_5">5 - Turbo</string>
+    <string name="snake_speed_short">Vel:%1$d</string>
+
+    <string name="setting_check_update">Verificar Atualização</string>
+    <string name="update_up_to_date">v%1$s (Atual)</string>
+    <string name="update_checking">...</string>
+    <string name="update_available_badge">NOVA v%1$s</string>
+    <string name="update_banner_home">⬇ Nova versão v%1$s! Toque p/ baixar</string>
 </resources>

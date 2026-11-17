@@ -39,8 +39,8 @@ class SnakeController(
     private val onHighScoreChanged: (Int) -> Unit = {}
 ) {
     companion object {
-        const val COLS = 20
-        const val ROWS = 12
+        const val COLS = 34
+        const val ROWS = 20
     }
 
     var snake by mutableStateOf(initialSnake())
@@ -142,10 +142,10 @@ class SnakeController(
     }
 
     private fun initialSnake(): List<Pair<Int, Int>> = listOf(
-        10 to 6,
-        9 to 6,
-        8 to 6,
-        7 to 6
+        17 to 10,
+        16 to 10,
+        15 to 10,
+        14 to 10
     )
 
     private fun spawnFood(occupied: List<Pair<Int, Int>>): Pair<Int, Int> {
@@ -164,13 +164,16 @@ class SnakeController(
 fun SnakeLcdScreen(
     controller: SnakeController,
     theme: LcdTheme,
+    speed: SnakeSpeed,
+    onCycleSpeed: () -> Unit,
     onEat: () -> Unit,
     onDie: () -> Unit,
     onExit: () -> Unit
 ) {
-    LaunchedEffect(controller.isPaused, controller.isGameOver, controller.score) {
+    LaunchedEffect(controller.isPaused, controller.isGameOver, controller.score, speed) {
         while (!controller.isPaused && !controller.isGameOver) {
-            val tickMs = (150L - (controller.score / 20) * 8L).coerceAtLeast(70L)
+            val tickMs = (speed.delayMs - (controller.score / 50) * 5L)
+                .coerceAtLeast((speed.delayMs * 75L) / 100L)
             delay(tickMs)
             controller.step(onEat = onEat, onDie = onDie)
         }
@@ -183,7 +186,7 @@ fun SnakeLcdScreen(
             .padding(horizontal = 10.dp, vertical = 6.dp),
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        // Header: Title | Score | High Score
+        // Header: Title | Score | High Score | Speed selector
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -192,14 +195,14 @@ fun SnakeLcdScreen(
             Text(
                 text = tr(R.string.snake_title),
                 color = theme.ink,
-                fontSize = 13.sp,
+                fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = FontFamily.Monospace
             )
             Text(
                 text = tr(R.string.snake_score, controller.score),
                 color = theme.ink,
-                fontSize = 12.sp,
+                fontSize = 11.sp,
                 fontWeight = FontWeight.SemiBold,
                 fontFamily = FontFamily.Monospace
             )
@@ -208,6 +211,17 @@ fun SnakeLcdScreen(
                 color = theme.ink.copy(alpha = 0.85f),
                 fontSize = 11.sp,
                 fontFamily = FontFamily.Monospace
+            )
+            Text(
+                text = tr(R.string.snake_speed_short, speed.level),
+                color = theme.tabText,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = FontFamily.Monospace,
+                modifier = Modifier
+                    .background(theme.tabBackground, RoundedCornerShape(3.dp))
+                    .clickable(onClick = onCycleSpeed)
+                    .padding(horizontal = 5.dp, vertical = 2.dp)
             )
         }
 
@@ -253,34 +267,33 @@ fun SnakeLcdScreen(
                     size = Size(cellW - padX * 2f, cellH * 0.32f)
                 )
 
-                // Snake body & head
+                // Snake slim body & head
+                val segPad = minOf(cellW, cellH) * 0.18f
                 controller.snake.forEachIndexed { idx, (sx, sy) ->
-                    val left = sx * cellW + 1.5f
-                    val top = sy * cellH + 1.5f
-                    val w = (cellW - 3f).coerceAtLeast(2f)
-                    val h = (cellH - 3f).coerceAtLeast(2f)
+                    val left = sx * cellW + segPad
+                    val top = sy * cellH + segPad
+                    val w = (cellW - segPad * 2f).coerceAtLeast(2f)
+                    val h = (cellH - segPad * 2f).coerceAtLeast(2f)
                     if (idx == 0) {
+                        val headPad = segPad * 0.55f
                         drawRect(
                             color = theme.ink,
-                            topLeft = Offset(sx * cellW + 0.5f, sy * cellH + 0.5f),
-                            size = Size((cellW - 1f).coerceAtLeast(3f), (cellH - 1f).coerceAtLeast(3f))
+                            topLeft = Offset(sx * cellW + headPad, sy * cellH + headPad),
+                            size = Size(
+                                (cellW - headPad * 2f).coerceAtLeast(3f),
+                                (cellH - headPad * 2f).coerceAtLeast(3f)
+                            )
                         )
                         drawRect(
                             color = theme.background,
-                            topLeft = Offset(sx * cellW + cellW * 0.35f, sy * cellH + cellH * 0.35f),
-                            size = Size((cellW * 0.28f).coerceAtLeast(2f), (cellH * 0.28f).coerceAtLeast(2f))
+                            topLeft = Offset(sx * cellW + cellW * 0.36f, sy * cellH + cellH * 0.36f),
+                            size = Size((cellW * 0.24f).coerceAtLeast(1.5f), (cellH * 0.24f).coerceAtLeast(1.5f))
                         )
                     } else {
                         drawRect(
                             color = theme.ink,
                             topLeft = Offset(left, top),
                             size = Size(w, h)
-                        )
-                        drawRect(
-                            color = theme.background.copy(alpha = 0.2f),
-                            topLeft = Offset(left, top),
-                            size = Size(w, h),
-                            style = Stroke(width = 1f)
                         )
                     }
                 }
@@ -311,6 +324,18 @@ fun SnakeLcdScreen(
                         fontSize = 11.sp,
                         fontFamily = FontFamily.Monospace,
                         textAlign = TextAlign.Center
+                    )
+                    Text(
+                        text = tr(speed.titleRes),
+                        color = theme.tabText,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        fontFamily = FontFamily.Monospace,
+                        modifier = Modifier
+                            .padding(top = 4.dp)
+                            .border(1.dp, theme.tabText.copy(alpha = 0.6f), RoundedCornerShape(3.dp))
+                            .clickable(onClick = onCycleSpeed)
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
                     )
                 }
             }

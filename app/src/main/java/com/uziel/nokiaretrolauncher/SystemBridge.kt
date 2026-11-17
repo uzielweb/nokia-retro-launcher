@@ -27,12 +27,20 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import java.io.File
 import java.io.FileOutputStream
+import java.net.HttpURLConnection
+import java.net.URL
 import java.text.Normalizer
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import org.json.JSONObject
 
 object SystemBridge {
+
+    const val CURRENT_VERSION_NAME = "1.2.0"
+    const val CURRENT_VERSION_CODE = 103
+    private const val UPDATE_MANIFEST_URL =
+        "https://raw.githubusercontent.com/uzielweb/nokia-retro-launcher/main/version.json"
 
     fun loadInstalledApps(context: Context): List<AppEntry> {
         val pm = context.packageManager
@@ -304,5 +312,64 @@ object SystemBridge {
         }
         prefs.edit().putString("quick_shortcuts", current.joinToString("|")).apply()
         return current
+    }
+
+    fun checkForUpdate(): UpdateInfo? {
+        return runCatching {
+            val url = URL("$UPDATE_MANIFEST_URL?t=${System.currentTimeMillis()}")
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                connectTimeout = 5000
+                readTimeout = 5000
+                useCaches = false
+                requestMethod = "GET"
+            }
+            try {
+                if (conn.responseCode != HttpURLConnection.HTTP_OK) return@runCatching null
+                val body = conn.inputStream.bufferedReader().use { it.readText() }
+                val json = JSONObject(body)
+                val remoteVersion = json.optString("version", "").trim()
+                val remoteCode = json.optInt("versionCode", 0)
+                val apkUrl = json.optString("apk_url", "").trim()
+                val releaseUrl = json.optString("release_url", "").trim()
+                val targetUrl = apkUrl.ifEmpty { releaseUrl }
+                if (remoteVersion.isEmpty() || targetUrl.isEmpty()) return@runCatching null
+
+                val hasNewer = remoteCode > CURRENT_VERSION_CODE ||
+                    compareSemver(remoteVersion, CURRENT_VERSION_NAME) > 0
+                if (hasNewer) {
+                    UpdateInfo(
+                        version = remoteVersion,
+                        versionCode = remoteCode,
+                        apkUrl = apkUrl.ifEmpty { targetUrl },
+                        releaseUrl = releaseUrl.ifEmpty { targetUrl }
+                    )
+                } else {
+                    null
+                }
+            } finally {
+                conn.disconnect()
+            }
+        }.getOrNull()
+    }
+
+    fun compareSemver(v1: String, v2: String): Int {
+        val p1 = v1.removePrefix("v").split(".").map { it.toIntOrNull() ?: 0 }
+        val p2 = v2.removePrefix("v").split(".").map { it.toIntOrNull() ?: 0 }
+        val maxLen = maxOf(p1.size, p2.size)
+        for (i in 0 until maxLen) {
+            val a = p1.getOrElse(i) { 0 }
+            val b = p2.getOrElse(i) { 0 }
+            if (a > b) return 1
+            if (a < b) return -1
+        }
+        return 0
+    }
+
+    fun openUrl(context: Context, url: String) {
+        if (url.isBlank()) return
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        }
+        runCatching { context.startActivity(intent) }
     }
 }
