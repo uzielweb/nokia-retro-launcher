@@ -1,0 +1,25 @@
+# Gradle & Android build artifacts
+.gradle/
+build/
+app/build/
+local.properties
+
+# Keystores & secrets
+*.keystore
+*.jks
+*.pem
+*.key
+.env*
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+
+# Generated release APK (distributed via GitHub Releases)
+*.apk
+*.aab
+
+# OS files
+.DS_Store
+Thumbs.db

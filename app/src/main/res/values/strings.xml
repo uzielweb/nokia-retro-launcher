@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Nokia Retro Launcher</string>
+    <string name="brand_header">NOKIA</string>
+    <string name="softkey_goto">Go to</string>
+    <string name="softkey_menu">Menu</string>
+    <string name="softkey_setting">Setting</string>
+    <string name="softkey_select">Select</string>
+    <string name="softkey_back">Back</string>
+    <string name="softkey_clear">Clear</string>
+    <string name="menu_title_goto">Go to</string>
+    <string name="menu_title_setting">Settings</string>
+    <string name="setting_lcd_theme">LCD Theme</string>
+    <string name="setting_haptics">Key Vibration</string>
+    <string name="setting_sound">Retro Key Tone</string>
+    <string name="setting_default_launcher">Set Default Launcher</string>
+    <string name="setting_android_settings">Android Settings</string>
+    <string name="theme_mustard">Classic Mustard</string>
+    <string name="theme_green">Nokia 3310 Green</string>
+    <string name="theme_amber">Retro Amber</string>
+    <string name="shortcut_dialer">Phone</string>
+    <string name="shortcut_messages">Messages</string>
+    <string name="shortcut_camera">Camera</string>
+    <string name="shortcut_torch">Torch</string>
+    <string name="shortcut_settings">Settings</string>
+    <string name="no_apps_found">No apps found</string>
+    <string name="on_label">ON</string>
+    <string name="off_label">OFF</string>
+</resources>
