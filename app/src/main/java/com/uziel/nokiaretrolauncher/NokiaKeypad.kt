@@ -22,8 +22,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.CallEnd
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.FlashlightOn
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,6 +36,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -45,6 +52,7 @@ fun NokiaKeypad(
     onDpadPress: (DpadDirection) -> Unit,
     onDigitPress: (String) -> Unit,
     onDigitLongPress: (String) -> Unit,
+    backlightColor: Color? = null,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -73,6 +81,7 @@ fun NokiaKeypad(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f),
+                    backlightColor = backlightColor,
                     onClick = onLeftSoftkey
                 ) {
                     Box(
@@ -80,7 +89,7 @@ fun NokiaKeypad(
                             .width(28.dp)
                             .height(3.dp)
                             .clip(RoundedCornerShape(2.dp))
-                            .background(Color.White)
+                            .background(backlightColor ?: Color.White)
                     )
                 }
 
@@ -88,18 +97,19 @@ fun NokiaKeypad(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f),
+                    backlightColor = backlightColor,
                     onClick = onCallPress
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Call,
-                        contentDescription = "Call",
+                        contentDescription = stringResource(R.string.cd_call),
                         tint = Color(0xFF1DB954),
                         modifier = Modifier.size(22.dp)
                     )
                 }
             }
 
-            // Center: Large square rounded D-Pad with white border
+            // Center: Large square rounded D-Pad with 4 directional shortcut icons + OK center
             Box(
                 modifier = Modifier
                     .weight(1.15f)
@@ -108,6 +118,7 @@ fun NokiaKeypad(
             ) {
                 DpadControl(
                     onDpadPress = onDpadPress,
+                    backlightColor = backlightColor,
                     modifier = Modifier
                         .fillMaxHeight()
                         .aspectRatio(1f, matchHeightConstraintsFirst = true)
@@ -125,6 +136,7 @@ fun NokiaKeypad(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f),
+                    backlightColor = backlightColor,
                     onClick = onRightSoftkey
                 ) {
                     Box(
@@ -132,7 +144,7 @@ fun NokiaKeypad(
                             .width(28.dp)
                             .height(3.dp)
                             .clip(RoundedCornerShape(2.dp))
-                            .background(Color.White)
+                            .background(backlightColor ?: Color.White)
                     )
                 }
 
@@ -140,11 +152,12 @@ fun NokiaKeypad(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f),
+                    backlightColor = backlightColor,
                     onClick = onEndPress
                 ) {
                     Icon(
                         imageVector = Icons.Filled.CallEnd,
-                        contentDescription = "End",
+                        contentDescription = stringResource(R.string.cd_end),
                         tint = Color(0xFFD93025),
                         modifier = Modifier.size(22.dp)
                     )
@@ -186,6 +199,7 @@ fun NokiaKeypad(
                 rowKeys.forEach { spec ->
                     T9KeyButton(
                         spec = spec,
+                        backlightColor = backlightColor,
                         onClick = { onDigitPress(spec.digit) },
                         onLongClick = { onDigitLongPress(spec.digit) },
                         modifier = Modifier
@@ -207,19 +221,23 @@ private data class T9KeySpec(
 @Composable
 private fun ControlButton(
     modifier: Modifier = Modifier,
+    backlightColor: Color? = null,
     onClick: () -> Unit,
     content: @Composable () -> Unit
 ) {
     val shape = RoundedCornerShape(12.dp)
+    val bgTop = backlightColor?.copy(alpha = 0.16f) ?: Color(0xFF1A1A20)
+    val bgBottom = Color(0xFF101014)
+    val borderColor = backlightColor?.copy(alpha = 0.65f) ?: Color(0xFF282830)
     Box(
         modifier = modifier
             .clip(shape)
             .background(
                 Brush.verticalGradient(
-                    colors = listOf(Color(0xFF1A1A20), Color(0xFF101014))
+                    colors = listOf(bgTop, bgBottom)
                 )
             )
-            .border(1.dp, Color(0xFF282830), shape)
+            .border(1.dp, borderColor, shape)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
@@ -230,60 +248,116 @@ private fun ControlButton(
 @Composable
 private fun DpadControl(
     onDpadPress: (DpadDirection) -> Unit,
+    backlightColor: Color? = null,
     modifier: Modifier = Modifier
 ) {
     val shape = RoundedCornerShape(20.dp)
+    val outerBorder = backlightColor?.copy(alpha = 0.88f) ?: Color(0xFFEBEBEB)
+    val outerTop = backlightColor?.copy(alpha = 0.14f) ?: Color(0xFF18181D)
+    val outerBottom = Color(0xFF0E0E12)
+    val iconTint = backlightColor?.copy(alpha = 0.92f) ?: Color.White.copy(alpha = 0.84f)
+    val okBg = backlightColor?.copy(alpha = 0.18f) ?: Color(0xFF1B1B22)
+    val okBorder = backlightColor?.copy(alpha = 0.82f) ?: Color(0xFF42424C)
+    val okTextColor = backlightColor ?: Color.White
+    val okShadow = backlightColor?.let { Shadow(color = it, blurRadius = 10f) }
+
     Box(
         modifier = modifier
             .clip(shape)
             .background(
                 Brush.verticalGradient(
-                    colors = listOf(Color(0xFF18181D), Color(0xFF0E0E12))
+                    colors = listOf(outerTop, outerBottom)
                 )
             )
-            .border(1.8.dp, Color(0xFFEBEBEB), shape)
+            .border(1.8.dp, outerBorder, shape)
     ) {
-        // 3x3 invisible hit grid for UP, DOWN, LEFT, RIGHT, CENTER
+        // 3x3 directional ring with 4 shortcut icons + demarcated OK center
         Column(modifier = Modifier.fillMaxSize()) {
-            // Top row -> UP
+            // Top row -> UP (Camera)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .clickable { onDpadPress(DpadDirection.UP) }
-            )
-            // Middle row -> LEFT | CENTER | RIGHT
+                    .clickable { onDpadPress(DpadDirection.UP) },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.PhotoCamera,
+                    contentDescription = stringResource(R.string.cd_dpad_up),
+                    tint = iconTint,
+                    modifier = Modifier.size(13.dp)
+                )
+            }
+            // Middle row -> LEFT (Go to / Shortcuts) | CENTER (OK) | RIGHT (Settings)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1.2f)
+                    .weight(1.3f),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight()
-                        .clickable { onDpadPress(DpadDirection.LEFT) }
-                )
+                        .clickable { onDpadPress(DpadDirection.LEFT) },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Star,
+                        contentDescription = stringResource(R.string.cd_dpad_left),
+                        tint = iconTint,
+                        modifier = Modifier.size(13.dp)
+                    )
+                }
                 Box(
                     modifier = Modifier
-                        .weight(1.2f)
+                        .weight(1.3f)
                         .fillMaxHeight()
-                        .clickable { onDpadPress(DpadDirection.CENTER) }
-                )
+                        .padding(2.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(okBg)
+                        .border(1.2.dp, okBorder, RoundedCornerShape(10.dp))
+                        .clickable { onDpadPress(DpadDirection.CENTER) },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = stringResource(R.string.dpad_ok_label),
+                        color = okTextColor,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        style = TextStyle(shadow = okShadow)
+                    )
+                }
                 Box(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight()
-                        .clickable { onDpadPress(DpadDirection.RIGHT) }
-                )
+                        .clickable { onDpadPress(DpadDirection.RIGHT) },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Settings,
+                        contentDescription = stringResource(R.string.cd_dpad_right),
+                        tint = iconTint,
+                        modifier = Modifier.size(13.dp)
+                    )
+                }
             }
-            // Bottom row -> DOWN
+            // Bottom row -> DOWN (Messages)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .clickable { onDpadPress(DpadDirection.DOWN) }
-            )
+                    .clickable { onDpadPress(DpadDirection.DOWN) },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Email,
+                    contentDescription = stringResource(R.string.cd_dpad_down),
+                    tint = iconTint,
+                    modifier = Modifier.size(13.dp)
+                )
+            }
         }
     }
 }
@@ -292,20 +366,28 @@ private fun DpadControl(
 @Composable
 private fun T9KeyButton(
     spec: T9KeySpec,
+    backlightColor: Color? = null,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val shape = RoundedCornerShape(14.dp)
+    val bgTop = backlightColor?.copy(alpha = 0.16f) ?: Color(0xFF1B1B21)
+    val bgBottom = Color(0xFF111115)
+    val borderColor = backlightColor?.copy(alpha = 0.65f) ?: Color(0xFF282830)
+    val mainColor = backlightColor ?: Color.White
+    val subColor = backlightColor?.copy(alpha = 0.82f) ?: Color.White.copy(alpha = 0.72f)
+    val glowShadow = backlightColor?.let { Shadow(color = it, blurRadius = 10f) }
+
     Box(
         modifier = modifier
             .clip(shape)
             .background(
                 Brush.verticalGradient(
-                    colors = listOf(Color(0xFF1B1B21), Color(0xFF111115))
+                    colors = listOf(bgTop, bgBottom)
                 )
             )
-            .border(1.dp, Color(0xFF282830), shape)
+            .border(1.dp, borderColor, shape)
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = onLongClick
@@ -320,18 +402,20 @@ private fun T9KeyButton(
             if (spec.subOnLeft && spec.sub.isNotEmpty()) {
                 Text(
                     text = spec.sub,
-                    color = Color.White.copy(alpha = 0.72f),
+                    color = subColor,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Normal,
+                    style = TextStyle(shadow = glowShadow),
                     modifier = Modifier.padding(end = 3.dp, top = 4.dp)
                 )
             }
 
             Text(
                 text = spec.digit,
-                color = Color.White,
+                color = mainColor,
                 fontSize = 20.sp,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
+                style = TextStyle(shadow = glowShadow)
             )
 
             if (!spec.subOnLeft && spec.sub.isNotEmpty()) {
@@ -339,25 +423,26 @@ private fun T9KeyButton(
                 when (spec.sub) {
                     "lock" -> Icon(
                         imageVector = Icons.Filled.Lock,
-                        contentDescription = "Lock",
-                        tint = Color.White.copy(alpha = 0.85f),
+                        contentDescription = stringResource(R.string.cd_lock),
+                        tint = subColor,
                         modifier = Modifier
                             .size(13.dp)
                             .padding(top = 2.dp)
                     )
                     "torch" -> Icon(
                         imageVector = Icons.Filled.FlashlightOn,
-                        contentDescription = "Torch",
-                        tint = Color.White.copy(alpha = 0.85f),
+                        contentDescription = stringResource(R.string.cd_torch),
+                        tint = subColor,
                         modifier = Modifier
                             .size(14.dp)
                             .padding(top = 2.dp)
                     )
                     else -> Text(
                         text = spec.sub,
-                        color = Color.White.copy(alpha = 0.72f),
+                        color = subColor,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Normal,
+                        style = TextStyle(shadow = glowShadow),
                         modifier = Modifier.padding(top = 4.dp)
                     )
                 }

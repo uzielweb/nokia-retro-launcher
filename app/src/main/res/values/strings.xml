@@ -26,4 +26,65 @@
     <string name="no_apps_found">No apps found</string>
     <string name="on_label">ON</string>
     <string name="off_label">OFF</string>
+
+    <string name="theme_blue_8210">Nokia 8210 Blue</string>
+    <string name="theme_cyan_8310">Ice Cyan 8310</string>
+    <string name="theme_white_paper">Paper White</string>
+    <string name="theme_red_6610">Ruby Red 6610</string>
+    <string name="theme_matrix_night">Matrix Night</string>
+
+    <string name="setting_keypad_backlight">Keypad Backlight</string>
+    <string name="backlight_sync">Sync LCD</string>
+    <string name="backlight_green">Green LED</string>
+    <string name="backlight_blue">Blue LED</string>
+    <string name="backlight_amber">Amber LED</string>
+    <string name="backlight_white">White LED</string>
+    <string name="backlight_off">OFF</string>
+
+    <string name="setting_language">Language</string>
+    <string name="lang_auto">Auto</string>
+    <string name="lang_pt">Português</string>
+    <string name="lang_en">English</string>
+    <string name="lang_es">Español</string>
+
+    <string name="setting_wallpaper">Wallpaper</string>
+    <string name="setting_pick_wallpaper">Wallpaper Photo</string>
+    <string name="wallpaper_none">None</string>
+    <string name="wallpaper_grid">Pixel Grid</string>
+    <string name="wallpaper_horizon">Retro Horizon</string>
+    <string name="wallpaper_custom">Custom Photo</string>
+    <string name="wallpaper_pick_action">GALLERY</string>
+
+    <string name="setting_nokia_tune">Nokia Ringtone</string>
+    <string name="nokia_tune_play_badge">PLAY</string>
+
+    <string name="search_placeholder">Search apps…</string>
+    <string name="t9_filter_prefix">T9: %1$s</string>
+    <string name="cd_search">Search apps</string>
+    <string name="cd_clear_search">Clear search</string>
+
+    <string name="shortcut_snake">Snake II</string>
+    <string name="snake_title">SNAKE II</string>
+    <string name="snake_score">Score: %1$d</string>
+    <string name="snake_high_score">HI: %1$d</string>
+    <string name="snake_paused">PAUSED</string>
+    <string name="snake_game_over">GAME OVER</string>
+    <string name="snake_press_start">Press Start / OK</string>
+    <string name="softkey_pause">Pause</string>
+    <string name="softkey_start">Start</string>
+
+    <string name="shortcut_manage_apps">+ App Shortcuts</string>
+    <string name="menu_title_shortcuts">Quick Shortcuts</string>
+    <string name="shortcut_hint_speed">Hold 1–9 on Home for quick launch</string>
+
+    <string name="cd_call">Call</string>
+    <string name="cd_end">End</string>
+    <string name="cd_lock">Lock</string>
+    <string name="cd_torch">Torch</string>
+    <string name="cd_dpad_up">Camera</string>
+    <string name="cd_dpad_down">Messages</string>
+    <string name="cd_dpad_left">Go to Shortcuts</string>
+    <string name="cd_dpad_right">Settings</string>
+    <string name="cd_dpad_ok">OK / Menu</string>
+    <string name="dpad_ok_label">OK</string>
 </resources>

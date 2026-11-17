@@ -4,11 +4,14 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.res.Configuration
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,6 +22,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -26,10 +30,13 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
@@ -43,6 +50,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.Locale
 
 class MainActivity : ComponentActivity() {
 
@@ -74,34 +82,122 @@ class MainActivity : ComponentActivity() {
 private fun NokiaLauncherRoot(
     registerBackHandler: ((() -> Unit)) -> Unit
 ) {
-    val context = LocalContext.current
+    val baseContext = LocalContext.current
+    val baseConfig = LocalConfiguration.current
+    val prefs = remember { baseContext.getSharedPreferences("nokia_launcher_prefs", Context.MODE_PRIVATE) }
+
+    var langIndex by remember { mutableIntStateOf(prefs.getInt("app_lang", 0)) }
+    val currentLanguage = AppLanguage.entries[langIndex.coerceIn(0, AppLanguage.entries.lastIndex)]
+    val targetLocale = remember(currentLanguage) {
+        if (currentLanguage == AppLanguage.AUTO) Locale.getDefault()
+        else Locale.forLanguageTag(currentLanguage.code)
+    }
+
+    val localizedConfig = remember(baseConfig, targetLocale) {
+        Configuration(baseConfig).apply { setLocale(targetLocale) }
+    }
+    val localizedContext = remember(baseContext, localizedConfig) {
+        baseContext.createConfigurationContext(localizedConfig)
+    }
+
+    CompositionLocalProvider(
+        LocalContext provides localizedContext,
+        LocalConfiguration provides localizedConfig
+    ) {
+        NokiaLauncherContent(
+            baseContext = baseContext,
+            prefs = prefs,
+            currentLanguage = currentLanguage,
+            targetLocale = targetLocale,
+            onCycleLanguage = {
+                langIndex = (langIndex + 1) % AppLanguage.entries.size
+                prefs.edit().putInt("app_lang", langIndex).apply()
+            },
+            registerBackHandler = registerBackHandler
+        )
+    }
+}
+
+@Composable
+private fun NokiaLauncherContent(
+    baseContext: Context,
+    prefs: android.content.SharedPreferences,
+    currentLanguage: AppLanguage,
+    targetLocale: Locale,
+    onCycleLanguage: () -> Unit,
+    registerBackHandler: ((() -> Unit)) -> Unit
+) {
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
-    val prefs = remember { context.getSharedPreferences("nokia_launcher_prefs", Context.MODE_PRIVATE) }
+    val currentLocaleState by rememberUpdatedState(targetLocale)
 
     var themeIndex by remember { mutableIntStateOf(prefs.getInt("lcd_theme", 0)) }
+    var backlightIndex by remember { mutableIntStateOf(prefs.getInt("keypad_backlight", 0)) }
+    var wallpaperIndex by remember { mutableIntStateOf(prefs.getInt("wallpaper_mode", 0)) }
     var hapticsEnabled by remember { mutableStateOf(prefs.getBoolean("haptics", true)) }
-    var soundEnabled by remember { mutableStateOf(prefs.getBoolean("sound", false)) }
+    var soundEnabled by remember { mutableStateOf(prefs.getBoolean("retro_sound", true)) }
 
     val currentTheme = LcdTheme.entries[themeIndex.coerceIn(0, LcdTheme.entries.lastIndex)]
+    val currentBacklight = KeypadBacklight.entries[backlightIndex.coerceIn(0, KeypadBacklight.entries.lastIndex)]
+    val currentWallpaperMode = WallpaperMode.entries[wallpaperIndex.coerceIn(0, WallpaperMode.entries.lastIndex)]
+    val backlightColor = currentBacklight.resolveColor(currentTheme)
+
+    var customWallpaper by remember { mutableStateOf(SystemBridge.loadCustomWallpaper(baseContext)) }
+    var shortcutPackageList by remember { mutableStateOf(SystemBridge.loadShortcutPackages(prefs)) }
+    val shortcutPackagesSet = remember(shortcutPackageList) { shortcutPackageList.toSet() }
+
+    val snakeController = remember {
+        SnakeController(initialHighScore = prefs.getInt("snake_high_score", 0)) { newHi ->
+            prefs.edit().putInt("snake_high_score", newHi).apply()
+        }
+    }
 
     var screenMode by remember { mutableStateOf(ScreenMode.HOME) }
     var dialBuffer by remember { mutableStateOf("") }
     var t9Filter by remember { mutableStateOf("") }
+    var searchQuery by remember { mutableStateOf("") }
+    var searchActive by remember { mutableStateOf(false) }
     var torchOn by remember { mutableStateOf(false) }
 
     var allApps by remember { mutableStateOf<List<AppEntry>>(emptyList()) }
-    var deviceStatus by remember { mutableStateOf(SystemBridge.readDeviceStatus(context)) }
+    var deviceStatus by remember { mutableStateOf(SystemBridge.readDeviceStatus(baseContext, targetLocale)) }
 
     var selectedAppIndex by remember { mutableIntStateOf(0) }
     var selectedGoToIndex by remember { mutableIntStateOf(0) }
     var selectedSettingIndex by remember { mutableIntStateOf(0) }
+    var selectedShortcutPickerIndex by remember { mutableIntStateOf(0) }
 
     val gridState = rememberLazyGridState()
 
-    val filteredApps = remember(allApps, t9Filter) {
-        if (t9Filter.isEmpty()) allApps
-        else allApps.filter { SystemBridge.matchesT9(it.label, t9Filter) }
+    val wallpaperPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        if (uri != null) {
+            scope.launch {
+                val loaded = withContext(Dispatchers.IO) {
+                    SystemBridge.saveCustomWallpaper(baseContext, uri)
+                }
+                if (loaded != null) {
+                    customWallpaper = loaded
+                    wallpaperIndex = WallpaperMode.CUSTOM_IMAGE.ordinal
+                    prefs.edit().putInt("wallpaper_mode", wallpaperIndex).apply()
+                }
+            }
+        }
+    }
+
+    val filteredApps = remember(allApps, t9Filter, searchQuery) {
+        if (t9Filter.isEmpty() && searchQuery.isBlank()) allApps
+        else allApps.filter { SystemBridge.matchesAppQuery(it.label, t9Filter, searchQuery) }
+    }
+
+    val shortcutApps = remember(allApps, shortcutPackageList) {
+        val byPkg = allApps.associateBy { it.packageName }
+        shortcutPackageList.mapNotNull { byPkg[it] }
+    }
+
+    LaunchedEffect(targetLocale) {
+        deviceStatus = SystemBridge.readDeviceStatus(baseContext, targetLocale)
     }
 
     LaunchedEffect(filteredApps.size) {
@@ -116,18 +212,22 @@ private fun NokiaLauncherRoot(
         }
     }
 
-    // Load apps initially and refresh on resume
+    // Initialize Retro Sound Engine + load apps
     LaunchedEffect(Unit) {
-        val loaded = withContext(Dispatchers.IO) { SystemBridge.loadInstalledApps(context) }
+        RetroSoundEngine.init(baseContext)
+        if (soundEnabled) {
+            RetroSoundEngine.play(baseContext, RetroSound.STARTUP)
+        }
+        val loaded = withContext(Dispatchers.IO) { SystemBridge.loadInstalledApps(baseContext) }
         allApps = loaded
     }
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                deviceStatus = SystemBridge.readDeviceStatus(context)
+                deviceStatus = SystemBridge.readDeviceStatus(baseContext, currentLocaleState)
                 scope.launch {
-                    val loaded = withContext(Dispatchers.IO) { SystemBridge.loadInstalledApps(context) }
+                    val loaded = withContext(Dispatchers.IO) { SystemBridge.loadInstalledApps(baseContext) }
                     allApps = loaded
                 }
             }
@@ -137,10 +237,10 @@ private fun NokiaLauncherRoot(
     }
 
     // Listen to time & battery changes
-    DisposableEffect(context) {
+    DisposableEffect(baseContext) {
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(ctx: Context?, intent: Intent?) {
-                deviceStatus = SystemBridge.readDeviceStatus(context)
+                deviceStatus = SystemBridge.readDeviceStatus(baseContext, currentLocaleState)
             }
         }
         val filter = IntentFilter().apply {
@@ -148,22 +248,25 @@ private fun NokiaLauncherRoot(
             addAction(Intent.ACTION_TIME_CHANGED)
             addAction(Intent.ACTION_BATTERY_CHANGED)
         }
-        context.registerReceiver(receiver, filter)
-        onDispose { runCatching { context.unregisterReceiver(receiver) } }
+        baseContext.registerReceiver(receiver, filter)
+        onDispose { runCatching { baseContext.unregisterReceiver(receiver) } }
     }
 
     // Register back button behavior (never exits launcher from Home)
-    LaunchedEffect(screenMode, dialBuffer, t9Filter) {
+    LaunchedEffect(screenMode, dialBuffer, t9Filter, searchQuery, searchActive) {
         registerBackHandler {
             when (screenMode) {
                 ScreenMode.MENU -> {
-                    if (t9Filter.isNotEmpty()) {
+                    if (searchActive || searchQuery.isNotEmpty() || t9Filter.isNotEmpty()) {
+                        searchActive = false
+                        searchQuery = ""
                         t9Filter = ""
+                        selectedAppIndex = 0
                     } else {
                         screenMode = ScreenMode.HOME
                     }
                 }
-                ScreenMode.GO_TO, ScreenMode.SETTINGS -> {
+                ScreenMode.GO_TO, ScreenMode.SETTINGS, ScreenMode.SNAKE, ScreenMode.PICK_SHORTCUT -> {
                     screenMode = ScreenMode.HOME
                 }
                 ScreenMode.HOME -> {
@@ -175,27 +278,49 @@ private fun NokiaLauncherRoot(
         }
     }
 
-    fun feedback() {
-        SystemBridge.playKeyFeedback(context, hapticsEnabled, soundEnabled)
+    fun feedback(sound: RetroSound = RetroSound.SELECT) {
+        SystemBridge.playKeyFeedback(baseContext, hapticsEnabled, soundEnabled, sound)
     }
 
-    val goToItems = listOf(
-        stringResource(R.string.shortcut_dialer) to {
-            SystemBridge.openDialer(context, dialBuffer)
-        },
-        stringResource(R.string.shortcut_messages) to {
-            SystemBridge.openMessages(context)
-        },
-        stringResource(R.string.shortcut_camera) to {
-            SystemBridge.openCamera(context)
-        },
-        stringResource(R.string.shortcut_torch) to {
-            torchOn = SystemBridge.toggleTorch(context, !torchOn)
-        },
-        stringResource(R.string.shortcut_settings) to {
-            SystemBridge.openAndroidSettings(context)
+    fun toggleShortcut(app: AppEntry) {
+        shortcutPackageList = SystemBridge.toggleShortcutPackage(prefs, app.packageName)
+        feedback(RetroSound.SELECT)
+    }
+
+    val goToItems: List<Pair<String, () -> Unit>> = buildList {
+        shortcutApps.forEach { app ->
+            add("★ ${app.label}" to {
+                feedback(RetroSound.SELECT)
+                SystemBridge.launchApp(baseContext, app)
+            })
         }
-    )
+        add(stringResource(R.string.shortcut_snake) to {
+            feedback(RetroSound.SELECT)
+            snakeController.reset()
+            screenMode = ScreenMode.SNAKE
+        })
+        add(stringResource(R.string.shortcut_manage_apps) to {
+            feedback(RetroSound.SELECT)
+            selectedShortcutPickerIndex = 0
+            screenMode = ScreenMode.PICK_SHORTCUT
+        })
+        add(stringResource(R.string.shortcut_dialer) to {
+            SystemBridge.openDialer(baseContext, dialBuffer)
+        })
+        add(stringResource(R.string.shortcut_messages) to {
+            SystemBridge.openMessages(baseContext)
+        })
+        add(stringResource(R.string.shortcut_camera) to {
+            SystemBridge.openCamera(baseContext)
+        })
+        add(stringResource(R.string.shortcut_torch) to {
+            feedback(RetroSound.TORCH)
+            torchOn = SystemBridge.toggleTorch(baseContext, !torchOn)
+        })
+        add(stringResource(R.string.shortcut_settings) to {
+            SystemBridge.openAndroidSettings(baseContext)
+        })
+    }
 
     val onLabel = stringResource(R.string.on_label)
     val offLabel = stringResource(R.string.off_label)
@@ -206,6 +331,38 @@ private fun NokiaLauncherRoot(
         ) {
             themeIndex = (themeIndex + 1) % LcdTheme.entries.size
             prefs.edit().putInt("lcd_theme", themeIndex).apply()
+        },
+        Triple(
+            stringResource(R.string.setting_keypad_backlight),
+            stringResource(currentBacklight.titleRes)
+        ) {
+            backlightIndex = (backlightIndex + 1) % KeypadBacklight.entries.size
+            prefs.edit().putInt("keypad_backlight", backlightIndex).apply()
+        },
+        Triple(
+            stringResource(R.string.setting_wallpaper),
+            stringResource(currentWallpaperMode.titleRes)
+        ) {
+            val nextIdx = (wallpaperIndex + 1) % WallpaperMode.entries.size
+            val nextMode = WallpaperMode.entries[nextIdx]
+            if (nextMode == WallpaperMode.CUSTOM_IMAGE && customWallpaper == null) {
+                wallpaperPickerLauncher.launch("image/*")
+            } else {
+                wallpaperIndex = nextIdx
+                prefs.edit().putInt("wallpaper_mode", wallpaperIndex).apply()
+            }
+        },
+        Triple(
+            stringResource(R.string.setting_pick_wallpaper),
+            stringResource(R.string.wallpaper_pick_action)
+        ) {
+            wallpaperPickerLauncher.launch("image/*")
+        },
+        Triple(
+            stringResource(R.string.setting_language),
+            stringResource(currentLanguage.titleRes)
+        ) {
+            onCycleLanguage()
         },
         Triple(
             stringResource(R.string.setting_haptics),
@@ -219,21 +376,43 @@ private fun NokiaLauncherRoot(
             if (soundEnabled) onLabel else offLabel
         ) {
             soundEnabled = !soundEnabled
-            prefs.edit().putBoolean("sound", soundEnabled).apply()
+            prefs.edit().putBoolean("retro_sound", soundEnabled).apply()
+            if (soundEnabled) {
+                RetroSoundEngine.play(baseContext, RetroSound.STARTUP)
+            }
+        },
+        Triple(
+            stringResource(R.string.setting_nokia_tune),
+            stringResource(R.string.nokia_tune_play_badge)
+        ) {
+            RetroSoundEngine.play(baseContext, RetroSound.NOKIA_TUNE)
+        },
+        Triple(
+            stringResource(R.string.menu_title_shortcuts),
+            shortcutApps.size.toString()
+        ) {
+            selectedShortcutPickerIndex = 0
+            screenMode = ScreenMode.PICK_SHORTCUT
         },
         Triple(
             stringResource(R.string.setting_default_launcher),
             ""
         ) {
-            SystemBridge.openDefaultLauncherSettings(context)
+            SystemBridge.openDefaultLauncherSettings(baseContext)
         },
         Triple(
             stringResource(R.string.setting_android_settings),
             ""
         ) {
-            SystemBridge.openAndroidSettings(context)
+            SystemBridge.openAndroidSettings(baseContext)
         }
     )
+
+    val shortcutPickerItems = remember(allApps, shortcutPackagesSet) {
+        allApps.map { app ->
+            app.label to if (shortcutPackagesSet.contains(app.packageName)) "★" else ""
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -256,50 +435,100 @@ private fun NokiaLauncherRoot(
                 .align(Alignment.CenterHorizontally)
         )
 
-        // Upper half: Retro LCD / App Drawer
+        // Upper half: Retro LCD / App Drawer / Snake
         RetroLcdScreen(
             mode = screenMode,
             theme = currentTheme,
+            wallpaperMode = currentWallpaperMode,
+            customWallpaper = customWallpaper,
             status = deviceStatus,
             dialBuffer = dialBuffer,
             t9Filter = t9Filter,
+            searchQuery = searchQuery,
+            searchActive = searchActive,
             filteredApps = filteredApps,
+            shortcutApps = shortcutApps,
+            shortcutPackages = shortcutPackagesSet,
             selectedAppIndex = selectedAppIndex,
             gridState = gridState,
             goToItems = goToItems,
             selectedGoToIndex = selectedGoToIndex,
             settingItems = settingItems,
             selectedSettingIndex = selectedSettingIndex,
+            shortcutPickerItems = shortcutPickerItems,
+            selectedShortcutPickerIndex = selectedShortcutPickerIndex,
+            snakeController = snakeController,
             torchOn = torchOn,
             onOpenGoTo = {
-                feedback()
+                feedback(RetroSound.SELECT)
                 selectedGoToIndex = 0
                 screenMode = ScreenMode.GO_TO
             },
             onOpenMenu = {
-                feedback()
+                feedback(RetroSound.SELECT)
                 t9Filter = ""
+                searchQuery = ""
+                searchActive = false
+                selectedAppIndex = 0
+                screenMode = ScreenMode.MENU
+            },
+            onOpenSearch = {
+                feedback(RetroSound.SELECT)
+                t9Filter = ""
+                searchQuery = ""
+                searchActive = true
                 selectedAppIndex = 0
                 screenMode = ScreenMode.MENU
             },
             onOpenSettings = {
-                feedback()
+                feedback(RetroSound.SELECT)
                 selectedSettingIndex = 0
                 screenMode = ScreenMode.SETTINGS
             },
+            onSearchQueryChange = { q ->
+                searchQuery = q
+                selectedAppIndex = 0
+            },
+            onToggleSearchActive = { active ->
+                searchActive = active
+            },
+            onClearSearch = {
+                feedback(RetroSound.BACK)
+                searchQuery = ""
+                t9Filter = ""
+                searchActive = false
+                selectedAppIndex = 0
+            },
             onLaunchApp = { app ->
-                feedback()
-                SystemBridge.launchApp(context, app)
+                feedback(RetroSound.SELECT)
+                SystemBridge.launchApp(baseContext, app)
+            },
+            onToggleShortcut = { app ->
+                toggleShortcut(app)
+            },
+            onToggleShortcutByIndex = { idx ->
+                allApps.getOrNull(idx)?.let { toggleShortcut(it) }
+            },
+            onSnakeEat = {
+                if (soundEnabled) RetroSoundEngine.play(baseContext, RetroSound.SNAKE_EAT)
+            },
+            onSnakeDie = {
+                if (soundEnabled) RetroSoundEngine.play(baseContext, RetroSound.SNAKE_DIE)
+            },
+            onExitSubScreen = {
+                feedback(RetroSound.BACK)
+                screenMode = ScreenMode.HOME
             },
             modifier = Modifier
                 .weight(0.47f)
                 .padding(horizontal = 10.dp)
         )
 
-        // Lower half: Physical-style Virtual T9 Keypad
+        // Lower half: Physical-style Retro-Illuminated T9 Keypad
         NokiaKeypad(
+            backlightColor = backlightColor,
             onLeftSoftkey = {
-                feedback()
+                feedback(RetroSound.SELECT)
                 when (screenMode) {
                     ScreenMode.HOME -> {
                         selectedGoToIndex = 0
@@ -307,7 +536,7 @@ private fun NokiaLauncherRoot(
                     }
                     ScreenMode.MENU -> {
                         filteredApps.getOrNull(selectedAppIndex)?.let {
-                            SystemBridge.launchApp(context, it)
+                            SystemBridge.launchApp(baseContext, it)
                         }
                     }
                     ScreenMode.GO_TO -> {
@@ -316,10 +545,16 @@ private fun NokiaLauncherRoot(
                     ScreenMode.SETTINGS -> {
                         settingItems.getOrNull(selectedSettingIndex)?.third?.invoke()
                     }
+                    ScreenMode.PICK_SHORTCUT -> {
+                        allApps.getOrNull(selectedShortcutPickerIndex)?.let { toggleShortcut(it) }
+                    }
+                    ScreenMode.SNAKE -> {
+                        snakeController.togglePauseOrRestart()
+                    }
                 }
             },
             onRightSoftkey = {
-                feedback()
+                feedback(RetroSound.BACK)
                 when (screenMode) {
                     ScreenMode.HOME -> {
                         if (dialBuffer.isNotEmpty()) {
@@ -330,39 +565,47 @@ private fun NokiaLauncherRoot(
                         }
                     }
                     ScreenMode.MENU -> {
-                        if (t9Filter.isNotEmpty()) {
-                            t9Filter = t9Filter.dropLast(1)
+                        if (searchQuery.isNotEmpty() || t9Filter.isNotEmpty() || searchActive) {
+                            searchQuery = ""
+                            t9Filter = ""
+                            searchActive = false
+                            selectedAppIndex = 0
                         } else {
                             screenMode = ScreenMode.HOME
                         }
                     }
-                    ScreenMode.GO_TO, ScreenMode.SETTINGS -> {
+                    ScreenMode.GO_TO, ScreenMode.SETTINGS, ScreenMode.PICK_SHORTCUT, ScreenMode.SNAKE -> {
                         screenMode = ScreenMode.HOME
                     }
                 }
             },
             onCallPress = {
-                feedback()
-                SystemBridge.openDialer(context, dialBuffer)
+                feedback(RetroSound.CALL)
+                SystemBridge.openDialer(baseContext, dialBuffer)
             },
             onEndPress = {
-                feedback()
+                feedback(RetroSound.END)
                 dialBuffer = ""
                 t9Filter = ""
+                searchQuery = ""
+                searchActive = false
                 screenMode = ScreenMode.HOME
             },
             onDpadPress = { dir ->
-                feedback()
+                val snd = if (dir == DpadDirection.CENTER) RetroSound.SELECT else RetroSound.NAV
+                feedback(snd)
                 when (screenMode) {
                     ScreenMode.HOME -> {
                         when (dir) {
                             DpadDirection.CENTER -> {
                                 t9Filter = ""
+                                searchQuery = ""
+                                searchActive = false
                                 selectedAppIndex = 0
                                 screenMode = ScreenMode.MENU
                             }
-                            DpadDirection.UP -> SystemBridge.openCamera(context)
-                            DpadDirection.DOWN -> SystemBridge.openMessages(context)
+                            DpadDirection.UP -> SystemBridge.openCamera(baseContext)
+                            DpadDirection.DOWN -> SystemBridge.openMessages(baseContext)
                             DpadDirection.LEFT -> {
                                 selectedGoToIndex = 0
                                 screenMode = ScreenMode.GO_TO
@@ -391,7 +634,7 @@ private fun NokiaLauncherRoot(
                                 }
                                 DpadDirection.CENTER -> {
                                     filteredApps.getOrNull(selectedAppIndex)?.let {
-                                        SystemBridge.launchApp(context, it)
+                                        SystemBridge.launchApp(baseContext, it)
                                     }
                                 }
                             }
@@ -424,10 +667,29 @@ private fun NokiaLauncherRoot(
                             }
                         }
                     }
+                    ScreenMode.PICK_SHORTCUT -> {
+                        val count = allApps.size
+                        if (count > 0) {
+                            when (dir) {
+                                DpadDirection.UP -> {
+                                    selectedShortcutPickerIndex = (selectedShortcutPickerIndex - 1).coerceAtLeast(0)
+                                }
+                                DpadDirection.DOWN -> {
+                                    selectedShortcutPickerIndex = (selectedShortcutPickerIndex + 1).coerceAtMost(count - 1)
+                                }
+                                DpadDirection.CENTER, DpadDirection.LEFT, DpadDirection.RIGHT -> {
+                                    allApps.getOrNull(selectedShortcutPickerIndex)?.let { toggleShortcut(it) }
+                                }
+                            }
+                        }
+                    }
+                    ScreenMode.SNAKE -> {
+                        snakeController.steer(dir)
+                    }
                 }
             },
             onDigitPress = { digit ->
-                feedback()
+                feedback(RetroSound.forDigit(digit))
                 when (screenMode) {
                     ScreenMode.HOME -> {
                         if (dialBuffer.length < 18) {
@@ -438,15 +700,37 @@ private fun NokiaLauncherRoot(
                         if (digit in "0".."9") {
                             t9Filter += digit
                             selectedAppIndex = 0
+                        } else if (digit == "#") {
+                            filteredApps.getOrNull(selectedAppIndex)?.let { toggleShortcut(it) }
+                        }
+                    }
+                    ScreenMode.SNAKE -> {
+                        when (digit) {
+                            "2" -> snakeController.steer(DpadDirection.UP)
+                            "8" -> snakeController.steer(DpadDirection.DOWN)
+                            "4" -> snakeController.steer(DpadDirection.LEFT)
+                            "6" -> snakeController.steer(DpadDirection.RIGHT)
+                            "5" -> snakeController.togglePauseOrRestart()
                         }
                     }
                     else -> Unit
                 }
             },
             onDigitLongPress = { digit ->
-                feedback()
                 if (digit == "0") {
-                    torchOn = SystemBridge.toggleTorch(context, !torchOn)
+                    feedback(RetroSound.TORCH)
+                    torchOn = SystemBridge.toggleTorch(baseContext, !torchOn)
+                } else if (screenMode == ScreenMode.HOME && digit in "1".."9") {
+                    val idx = digit.toInt() - 1
+                    val shortcut = shortcutApps.getOrNull(idx)
+                    if (shortcut != null) {
+                        feedback(RetroSound.SELECT)
+                        SystemBridge.launchApp(baseContext, shortcut)
+                    } else {
+                        feedback(RetroSound.forDigit(digit))
+                    }
+                } else {
+                    feedback(RetroSound.forDigit(digit))
                 }
             },
             modifier = Modifier.weight(0.53f)

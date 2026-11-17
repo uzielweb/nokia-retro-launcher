@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Nokia Retro Launcher</string>
+    <string name="brand_header">NOKIA</string>
+    <string name="softkey_goto">Ir a</string>
+    <string name="softkey_menu">Menú</string>
+    <string name="softkey_setting">Ajustes</string>
+    <string name="softkey_select">Elegir</string>
+    <string name="softkey_back">Atrás</string>
+    <string name="softkey_clear">Borrar</string>
+    <string name="menu_title_goto">Ir a</string>
+    <string name="menu_title_setting">Ajustes</string>
+    <string name="setting_lcd_theme">Color del LCD</string>
+    <string name="setting_haptics">Vibración</string>
+    <string name="setting_sound">Sonido Retro Nokia</string>
+    <string name="setting_default_launcher">Launcher Predet.</string>
+    <string name="setting_android_settings">Ajustes de Android</string>
+    <string name="theme_mustard">Mostaza Clásico</string>
+    <string name="theme_green">Verde Nokia 3310</string>
+    <string name="theme_amber">Ámbar Retro</string>
+    <string name="shortcut_dialer">Teléfono</string>
+    <string name="shortcut_messages">Mensajes</string>
+    <string name="shortcut_camera">Cámara</string>
+    <string name="shortcut_torch">Linterna</string>
+    <string name="shortcut_settings">Ajustes</string>
+    <string name="no_apps_found">No se encontraron apps</string>
+    <string name="on_label">SÍ</string>
+    <string name="off_label">NO</string>
+
+    <string name="theme_blue_8210">Azul Nokia 8210</string>
+    <string name="theme_cyan_8310">Cian Hielo 8310</string>
+    <string name="theme_white_paper">Blanco Papel</string>
+    <string name="theme_red_6610">Rubí Nokia 6610</string>
+    <string name="theme_matrix_night">Matrix Nocturno</string>
+
+    <string name="setting_keypad_backlight">Luz del Teclado</string>
+    <string name="backlight_sync">Color LCD</string>
+    <string name="backlight_green">LED Verde</string>
+    <string name="backlight_blue">LED Azul</string>
+    <string name="backlight_amber">LED Ámbar</string>
+    <string name="backlight_white">LED Blanco</string>
+    <string name="backlight_off">NO</string>
+
+    <string name="setting_language">Idioma</string>
+    <string name="lang_auto">Auto</string>
+    <string name="lang_pt">Português</string>
+    <string name="lang_en">English</string>
+    <string name="lang_es">Español</string>
+
+    <string name="setting_wallpaper">Fondo de Pantalla</string>
+    <string name="setting_pick_wallpaper">Foto de Fondo</string>
+    <string name="wallpaper_none">Ninguno</string>
+    <string name="wallpaper_grid">Cuadrícula Píxel</string>
+    <string name="wallpaper_horizon">Horizonte Retro</string>
+    <string name="wallpaper_custom">Foto Propia</string>
+    <string name="wallpaper_pick_action">GALERÍA</string>
+
+    <string name="setting_nokia_tune">Tono Nokia</string>
+    <string name="nokia_tune_play_badge">SONAR</string>
+
+    <string name="search_placeholder">Buscar apps…</string>
+    <string name="t9_filter_prefix">T9: %1$s</string>
+    <string name="cd_search">Buscar apps</string>
+    <string name="cd_clear_search">Limpiar búsqueda</string>
+
+    <string name="shortcut_snake">Serpiente (Snake II)</string>
+    <string name="snake_title">SNAKE II</string>
+    <string name="snake_score">Pts: %1$d</string>
+    <string name="snake_high_score">Réc: %1$d</string>
+    <string name="snake_paused">PAUSADO</string>
+    <string name="snake_game_over">FIN DEL JUEGO</string>
+    <string name="snake_press_start">Pulsa Iniciar / OK</string>
+    <string name="softkey_pause">Pausa</string>
+    <string name="softkey_start">Iniciar</string>
+
+    <string name="shortcut_manage_apps">+ Accesos Rápidos</string>
+    <string name="menu_title_shortcuts">Accesos Rápidos</string>
+    <string name="shortcut_hint_speed">Mantén 1–9 en Inicio para abrir rápido</string>
+
+    <string name="cd_call">Llamar</string>
+    <string name="cd_end">Colgar</string>
+    <string name="cd_lock">Bloquear</string>
+    <string name="cd_torch">Linterna</string>
+    <string name="cd_dpad_up">Cámara</string>
+    <string name="cd_dpad_down">Mensajes</string>
+    <string name="cd_dpad_left">Ir a Accesos</string>
+    <string name="cd_dpad_right">Ajustes</string>
+    <string name="cd_dpad_ok">OK / Menú</string>
+    <string name="dpad_ok_label">OK</string>
+</resources>

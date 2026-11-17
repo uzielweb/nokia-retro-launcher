@@ -19,6 +19,7 @@ local.properties
 # Generated release APK (distributed via GitHub Releases)
 *.apk
 *.aab
+*.idsig
 
 # OS files
 .DS_Store

@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Nokia Retro Launcher</string>
+    <string name="brand_header">NOKIA</string>
+    <string name="softkey_goto">Ir para</string>
+    <string name="softkey_menu">Menu</string>
+    <string name="softkey_setting">Config.</string>
+    <string name="softkey_select">Selec.</string>
+    <string name="softkey_back">Voltar</string>
+    <string name="softkey_clear">Limpar</string>
+    <string name="menu_title_goto">Ir para</string>
+    <string name="menu_title_setting">Configurações</string>
+    <string name="setting_lcd_theme">Cor do LCD</string>
+    <string name="setting_haptics">Vibração de Tecla</string>
+    <string name="setting_sound">Som Retrô Nokia</string>
+    <string name="setting_default_launcher">Launcher Padrão</string>
+    <string name="setting_android_settings">Config. do Android</string>
+    <string name="theme_mustard">Mostarda Clássico</string>
+    <string name="theme_green">Verde Nokia 3310</string>
+    <string name="theme_amber">Âmbar Retrô</string>
+    <string name="shortcut_dialer">Telefone</string>
+    <string name="shortcut_messages">Mensagens</string>
+    <string name="shortcut_camera">Câmera</string>
+    <string name="shortcut_torch">Lanterna</string>
+    <string name="shortcut_settings">Configurações</string>
+    <string name="no_apps_found">Nenhum app encontrado</string>
+    <string name="on_label">LIG</string>
+    <string name="off_label">DESL</string>
+
+    <string name="theme_blue_8210">Azul Nokia 8210</string>
+    <string name="theme_cyan_8310">Ciano Gelo 8310</string>
+    <string name="theme_white_paper">Branco Papel</string>
+    <string name="theme_red_6610">Rubi Nokia 6610</string>
+    <string name="theme_matrix_night">Matrix Noturno</string>
+
+    <string name="setting_keypad_backlight">Luz do Teclado</string>
+    <string name="backlight_sync">Cor do LCD</string>
+    <string name="backlight_green">LED Verde</string>
+    <string name="backlight_blue">LED Azul</string>
+    <string name="backlight_amber">LED Âmbar</string>
+    <string name="backlight_white">LED Branco</string>
+    <string name="backlight_off">DESL</string>
+
+    <string name="setting_language">Idioma</string>
+    <string name="lang_auto">Auto</string>
+    <string name="lang_pt">Português</string>
+    <string name="lang_en">English</string>
+    <string name="lang_es">Español</string>
+
+    <string name="setting_wallpaper">Papel de Parede</string>
+    <string name="setting_pick_wallpaper">Foto de Fundo</string>
+    <string name="wallpaper_none">Nenhum</string>
+    <string name="wallpaper_grid">Grade Pixel</string>
+    <string name="wallpaper_horizon">Horizonte Retrô</string>
+    <string name="wallpaper_custom">Foto Própria</string>
+    <string name="wallpaper_pick_action">GALERIA</string>
+
+    <string name="setting_nokia_tune">Toque Nokia</string>
+    <string name="nokia_tune_play_badge">TOCAR</string>
+
+    <string name="search_placeholder">Buscar apps…</string>
+    <string name="t9_filter_prefix">T9: %1$s</string>
+    <string name="cd_search">Buscar apps</string>
+    <string name="cd_clear_search">Limpar busca</string>
+
+    <string name="shortcut_snake">Cobrinha (Snake II)</string>
+    <string name="snake_title">COBRINHA</string>
+    <string name="snake_score">Pts: %1$d</string>
+    <string name="snake_high_score">Rec: %1$d</string>
+    <string name="snake_paused">PAUSADO</string>
+    <string name="snake_game_over">FIM DE JOGO</string>
+    <string name="snake_press_start">Toque Iniciar / OK</string>
+    <string name="softkey_pause">Pausar</string>
+    <string name="softkey_start">Iniciar</string>
+
+    <string name="shortcut_manage_apps">+ Atalhos de Apps</string>
+    <string name="menu_title_shortcuts">Atalhos Rápidos</string>
+    <string name="shortcut_hint_speed">Segure 1–9 na Home para abrir rápido</string>
+
+    <string name="cd_call">Chamar</string>
+    <string name="cd_end">Desligar</string>
+    <string name="cd_lock">Bloquear</string>
+    <string name="cd_torch">Lanterna</string>
+    <string name="cd_dpad_up">Câmera</string>
+    <string name="cd_dpad_down">Mensagens</string>
+    <string name="cd_dpad_left">Ir para Atalhos</string>
+    <string name="cd_dpad_right">Configurações</string>
+    <string name="cd_dpad_ok">OK / Menu</string>
+    <string name="dpad_ok_label">OK</string>
+</resources>

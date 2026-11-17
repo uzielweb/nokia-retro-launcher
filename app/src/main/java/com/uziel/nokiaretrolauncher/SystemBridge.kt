@@ -4,14 +4,15 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraManager
-import android.media.AudioManager
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.net.Uri
@@ -24,6 +25,9 @@ import android.provider.MediaStore
 import android.provider.Settings
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import java.io.File
+import java.io.FileOutputStream
+import java.text.Normalizer
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -145,7 +149,12 @@ object SystemBridge {
         }.getOrDefault(false)
     }
 
-    fun playKeyFeedback(context: Context, hapticsEnabled: Boolean, soundEnabled: Boolean) {
+    fun playKeyFeedback(
+        context: Context,
+        hapticsEnabled: Boolean,
+        soundEnabled: Boolean,
+        sound: RetroSound = RetroSound.SELECT
+    ) {
         if (hapticsEnabled) {
             runCatching {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -166,14 +175,11 @@ object SystemBridge {
             }
         }
         if (soundEnabled) {
-            runCatching {
-                val am = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-                am.playSoundEffect(AudioManager.FX_KEY_CLICK, 0.5f)
-            }
+            RetroSoundEngine.play(context, sound)
         }
     }
 
-    fun readDeviceStatus(context: Context): DeviceStatus {
+    fun readDeviceStatus(context: Context, locale: Locale = Locale.getDefault()): DeviceStatus {
         val batteryIntent = context.registerReceiver(
             null,
             IntentFilter(Intent.ACTION_BATTERY_CHANGED)
@@ -195,8 +201,8 @@ object SystemBridge {
         }
 
         val now = Date()
-        val dateFmt = SimpleDateFormat("EEE, dd MMM", Locale.ENGLISH)
-        val timeFmt = SimpleDateFormat("HH:mm", Locale.getDefault())
+        val dateFmt = SimpleDateFormat("EEE, dd MMM", locale)
+        val timeFmt = SimpleDateFormat("HH:mm", locale)
 
         return DeviceStatus(
             batteryPercent = batteryPct.coerceIn(0, 100),
@@ -219,11 +225,83 @@ object SystemBridge {
         'w' to '9', 'x' to '9', 'y' to '9', 'z' to '9'
     )
 
+    private fun normalizeAscii(text: String): String {
+        val normalized = Normalizer.normalize(text, Normalizer.Form.NFD)
+        return normalized.replace(Regex("\\p{M}+"), "").lowercase(Locale.ENGLISH)
+    }
+
     fun matchesT9(appLabel: String, digits: String): Boolean {
         if (digits.isEmpty()) return true
-        val converted = appLabel.lowercase(Locale.ENGLISH).map { ch ->
+        val clean = normalizeAscii(appLabel)
+        val converted = clean.map { ch ->
             t9Map[ch] ?: ch
         }.joinToString("")
-        return converted.contains(digits) || appLabel.contains(digits, ignoreCase = true)
+        return converted.contains(digits) || clean.contains(digits, ignoreCase = true)
+    }
+
+    fun matchesAppQuery(appLabel: String, t9Digits: String, textQuery: String): Boolean {
+        val t9Ok = matchesT9(appLabel, t9Digits)
+        if (!t9Ok) return false
+        if (textQuery.isBlank()) return true
+        return normalizeAscii(appLabel).contains(normalizeAscii(textQuery.trim()))
+    }
+
+    private fun wallpaperFile(context: Context): File =
+        File(context.filesDir, "custom_wallpaper.jpg")
+
+    fun saveCustomWallpaper(context: Context, uri: Uri): ImageBitmap? {
+        return runCatching {
+            val raw = context.contentResolver.openInputStream(uri)?.use { stream ->
+                BitmapFactory.decodeStream(stream)
+            } ?: return null
+
+            val maxDim = 720
+            val w = raw.width
+            val h = raw.height
+            val scale = if (w > maxDim || h > maxDim) {
+                maxDim.toFloat() / maxOf(w, h).toFloat()
+            } else {
+                1f
+            }
+            val finalBitmap = if (scale < 1f) {
+                Bitmap.createScaledBitmap(
+                    raw,
+                    (w * scale).toInt().coerceAtLeast(1),
+                    (h * scale).toInt().coerceAtLeast(1),
+                    true
+                )
+            } else {
+                raw
+            }
+            FileOutputStream(wallpaperFile(context)).use { out ->
+                finalBitmap.compress(Bitmap.CompressFormat.JPEG, 88, out)
+            }
+            finalBitmap.asImageBitmap()
+        }.getOrNull()
+    }
+
+    fun loadCustomWallpaper(context: Context): ImageBitmap? {
+        val file = wallpaperFile(context)
+        if (!file.exists()) return null
+        return runCatching {
+            BitmapFactory.decodeFile(file.absolutePath)?.asImageBitmap()
+        }.getOrNull()
+    }
+
+    fun loadShortcutPackages(prefs: SharedPreferences): List<String> {
+        val raw = prefs.getString("quick_shortcuts", "").orEmpty()
+        if (raw.isBlank()) return emptyList()
+        return raw.split("|").map { it.trim() }.filter { it.isNotEmpty() }.distinct()
+    }
+
+    fun toggleShortcutPackage(prefs: SharedPreferences, pkg: String): List<String> {
+        val current = loadShortcutPackages(prefs).toMutableList()
+        if (current.contains(pkg)) {
+            current.remove(pkg)
+        } else {
+            current.add(pkg)
+        }
+        prefs.edit().putString("quick_shortcuts", current.joinToString("|")).apply()
+        return current
     }
 }
