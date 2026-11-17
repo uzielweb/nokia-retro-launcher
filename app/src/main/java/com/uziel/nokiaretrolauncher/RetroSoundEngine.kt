@@ -10,6 +10,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
@@ -61,7 +62,7 @@ object RetroSoundEngine {
     @Volatile
     private var soundPool: SoundPool? = null
     private val soundIds = ConcurrentHashMap<RetroSound, Int>()
-    private val loadedSampleIds = ConcurrentHashMap.newKeySet<Int>()
+    private val loadedSampleIds = Collections.newSetFromMap(ConcurrentHashMap<Int, Boolean>())
     private val initialized = AtomicBoolean(false)
 
     fun init(context: Context) {
@@ -84,7 +85,7 @@ object RetroSoundEngine {
                 }
                 soundPool = pool
 
-                val dir = File(appContext.cacheDir, "nokia_sfx_v2").apply { mkdirs() }
+                val dir = File(appContext.cacheDir, "nokia_sfx_v3").apply { mkdirs() }
                 for (sound in RetroSound.entries) {
                     val wavFile = File(dir, "${sound.name.lowercase()}.wav")
                     if (!wavFile.exists() || wavFile.length() <= 44L) {
@@ -112,8 +113,15 @@ object RetroSoundEngine {
     private fun playFallbackTrack(sound: RetroSound) {
         playExecutor.execute {
             runCatching {
-                val pcm = synthesizePcm(stepsFor(sound))
-                if (pcm.isEmpty()) return@runCatching
+                val rawPcm = synthesizePcm(stepsFor(sound))
+                if (rawPcm.isEmpty()) return@runCatching
+                val minBytes = AudioTrack.getMinBufferSize(
+                    SAMPLE_RATE,
+                    AudioFormat.CHANNEL_OUT_MONO,
+                    AudioFormat.ENCODING_PCM_16BIT
+                ).coerceAtLeast(4410)
+                val bufSize = maxOf(rawPcm.size, minBytes)
+                val pcm = if (rawPcm.size < bufSize) rawPcm.copyOf(bufSize) else rawPcm
                 val attrs = AudioAttributes.Builder()
                     .setUsage(AudioAttributes.USAGE_MEDIA)
                     .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
@@ -127,13 +135,13 @@ object RetroSoundEngine {
                     .setAudioAttributes(attrs)
                     .setAudioFormat(format)
                     .setTransferMode(AudioTrack.MODE_STATIC)
-                    .setBufferSizeInBytes(pcm.size)
+                    .setBufferSizeInBytes(bufSize)
                     .build()
                 try {
                     track.write(pcm, 0, pcm.size)
                     track.play()
-                    val durationMs = (pcm.size * 1000L) / (SAMPLE_RATE * 2L)
-                    Thread.sleep(durationMs + 45L)
+                    val durationMs = (rawPcm.size * 1000L) / (SAMPLE_RATE * 2L)
+                    Thread.sleep(durationMs + 55L)
                 } finally {
                     runCatching { track.stop() }
                     track.release()
@@ -217,7 +225,8 @@ object RetroSoundEngine {
                 out.write(ByteArray(gapBytes))
             }
         }
-        return out.toByteArray()
+        val raw = out.toByteArray()
+        return if (raw.size < 4410) raw.copyOf(4410) else raw
     }
 
     private fun writeWavFile(file: File, pcmData: ByteArray) {

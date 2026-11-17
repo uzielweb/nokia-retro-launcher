@@ -180,38 +180,39 @@ object SystemBridge {
     }
 
     fun readDeviceStatus(context: Context, locale: Locale = Locale.getDefault()): DeviceStatus {
-        val batteryIntent = context.registerReceiver(
-            null,
-            IntentFilter(Intent.ACTION_BATTERY_CHANGED)
-        )
-        val level = batteryIntent?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
-        val scale = batteryIntent?.getIntExtra(BatteryManager.EXTRA_SCALE, 100) ?: 100
-        val batteryPct = if (level >= 0 && scale > 0) ((level * 100f) / scale).toInt() else 100
+        return runCatching {
+            val batteryIntent = runCatching {
+                context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+            }.getOrNull()
+            val level = batteryIntent?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
+            val scale = batteryIntent?.getIntExtra(BatteryManager.EXTRA_SCALE, 100) ?: 100
+            val batteryPct = if (level >= 0 && scale > 0) ((level * 100f) / scale).toInt() else 100
 
-        var wifiConnected = false
-        var cellularConnected = false
-        runCatching {
-            val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-            val network = cm.activeNetwork
-            val caps = cm.getNetworkCapabilities(network)
-            if (caps != null) {
-                wifiConnected = caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
-                cellularConnected = caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
+            var wifiConnected = false
+            var cellularConnected = false
+            runCatching {
+                val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+                val network = cm.activeNetwork
+                val caps = cm.getNetworkCapabilities(network)
+                if (caps != null) {
+                    wifiConnected = caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
+                    cellularConnected = caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
+                }
             }
-        }
 
-        val now = Date()
-        val dateFmt = SimpleDateFormat("EEE, dd MMM", locale)
-        val timeFmt = SimpleDateFormat("HH:mm", locale)
+            val now = Date()
+            val dateFmt = SimpleDateFormat("EEE, dd MMM", locale)
+            val timeFmt = SimpleDateFormat("HH:mm", locale)
 
-        return DeviceStatus(
-            batteryPercent = batteryPct.coerceIn(0, 100),
-            isWifiConnected = wifiConnected,
-            hasMobileData = cellularConnected || !wifiConnected,
-            signalBars = 4,
-            dateText = dateFmt.format(now),
-            timeText = timeFmt.format(now)
-        )
+            DeviceStatus(
+                batteryPercent = batteryPct.coerceIn(0, 100),
+                isWifiConnected = wifiConnected,
+                hasMobileData = cellularConnected || !wifiConnected,
+                signalBars = 4,
+                dateText = dateFmt.format(now),
+                timeText = timeFmt.format(now)
+            )
+        }.getOrDefault(DeviceStatus())
     }
 
     private val t9Map = mapOf(

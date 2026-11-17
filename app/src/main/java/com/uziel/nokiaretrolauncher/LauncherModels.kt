@@ -1,8 +1,28 @@
 package com.uziel.nokiaretrolauncher
 
 import android.content.ComponentName
+import android.content.res.Resources
+import androidx.annotation.StringRes
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.res.stringResource
+
+val LocalAppResources = compositionLocalOf<Resources?> { null }
+
+@Composable
+fun tr(@StringRes id: Int): String {
+    val res = LocalAppResources.current
+    return res?.let { runCatching { it.getString(id) }.getOrNull() } ?: stringResource(id)
+}
+
+@Composable
+fun tr(@StringRes id: Int, vararg formatArgs: Any): String {
+    val res = LocalAppResources.current
+    return res?.let { runCatching { it.getString(id, *formatArgs) }.getOrNull() }
+        ?: stringResource(id, *formatArgs)
+}
 
 data class AppEntry(
     val label: String,

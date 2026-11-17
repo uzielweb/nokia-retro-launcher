@@ -37,7 +37,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -102,7 +101,7 @@ fun NokiaKeypad(
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Call,
-                        contentDescription = stringResource(R.string.cd_call),
+                        contentDescription = tr(R.string.cd_call),
                         tint = Color(0xFF1DB954),
                         modifier = Modifier.size(22.dp)
                     )
@@ -157,7 +156,7 @@ fun NokiaKeypad(
                 ) {
                     Icon(
                         imageVector = Icons.Filled.CallEnd,
-                        contentDescription = stringResource(R.string.cd_end),
+                        contentDescription = tr(R.string.cd_end),
                         tint = Color(0xFFD93025),
                         modifier = Modifier.size(22.dp)
                     )
@@ -283,7 +282,7 @@ private fun DpadControl(
             ) {
                 Icon(
                     imageVector = Icons.Filled.PhotoCamera,
-                    contentDescription = stringResource(R.string.cd_dpad_up),
+                    contentDescription = tr(R.string.cd_dpad_up),
                     tint = iconTint,
                     modifier = Modifier.size(13.dp)
                 )
@@ -304,7 +303,7 @@ private fun DpadControl(
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Star,
-                        contentDescription = stringResource(R.string.cd_dpad_left),
+                        contentDescription = tr(R.string.cd_dpad_left),
                         tint = iconTint,
                         modifier = Modifier.size(13.dp)
                     )
@@ -321,7 +320,7 @@ private fun DpadControl(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = stringResource(R.string.dpad_ok_label),
+                        text = tr(R.string.dpad_ok_label),
                         color = okTextColor,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
@@ -337,7 +336,7 @@ private fun DpadControl(
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Settings,
-                        contentDescription = stringResource(R.string.cd_dpad_right),
+                        contentDescription = tr(R.string.cd_dpad_right),
                         tint = iconTint,
                         modifier = Modifier.size(13.dp)
                     )
@@ -353,7 +352,7 @@ private fun DpadControl(
             ) {
                 Icon(
                     imageVector = Icons.Filled.Email,
-                    contentDescription = stringResource(R.string.cd_dpad_down),
+                    contentDescription = tr(R.string.cd_dpad_down),
                     tint = iconTint,
                     modifier = Modifier.size(13.dp)
                 )
@@ -423,7 +422,7 @@ private fun T9KeyButton(
                 when (spec.sub) {
                     "lock" -> Icon(
                         imageVector = Icons.Filled.Lock,
-                        contentDescription = stringResource(R.string.cd_lock),
+                        contentDescription = tr(R.string.cd_lock),
                         tint = subColor,
                         modifier = Modifier
                             .size(13.dp)
@@ -431,7 +430,7 @@ private fun T9KeyButton(
                     )
                     "torch" -> Icon(
                         imageVector = Icons.Filled.FlashlightOn,
-                        contentDescription = stringResource(R.string.cd_torch),
+                        contentDescription = tr(R.string.cd_torch),
                         tint = subColor,
                         modifier = Modifier
                             .size(14.dp)

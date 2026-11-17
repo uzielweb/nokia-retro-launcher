@@ -39,7 +39,6 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -96,14 +95,11 @@ private fun NokiaLauncherRoot(
     val localizedConfig = remember(baseConfig, targetLocale) {
         Configuration(baseConfig).apply { setLocale(targetLocale) }
     }
-    val localizedContext = remember(baseContext, localizedConfig) {
-        baseContext.createConfigurationContext(localizedConfig)
+    val localizedResources = remember(baseContext, localizedConfig) {
+        baseContext.createConfigurationContext(localizedConfig).resources
     }
 
-    CompositionLocalProvider(
-        LocalContext provides localizedContext,
-        LocalConfiguration provides localizedConfig
-    ) {
+    CompositionLocalProvider(LocalAppResources provides localizedResources) {
         NokiaLauncherContent(
             baseContext = baseContext,
             prefs = prefs,
@@ -142,7 +138,7 @@ private fun NokiaLauncherContent(
     val currentWallpaperMode = WallpaperMode.entries[wallpaperIndex.coerceIn(0, WallpaperMode.entries.lastIndex)]
     val backlightColor = currentBacklight.resolveColor(currentTheme)
 
-    var customWallpaper by remember { mutableStateOf(SystemBridge.loadCustomWallpaper(baseContext)) }
+    var customWallpaper by remember { mutableStateOf<ImageBitmap?>(null) }
     var shortcutPackageList by remember { mutableStateOf(SystemBridge.loadShortcutPackages(prefs)) }
     val shortcutPackagesSet = remember(shortcutPackageList) { shortcutPackageList.toSet() }
 
@@ -212,12 +208,14 @@ private fun NokiaLauncherContent(
         }
     }
 
-    // Initialize Retro Sound Engine + load apps
+    // Initialize Retro Sound Engine + load apps and custom wallpaper
     LaunchedEffect(Unit) {
         RetroSoundEngine.init(baseContext)
         if (soundEnabled) {
             RetroSoundEngine.play(baseContext, RetroSound.STARTUP)
         }
+        val loadedWp = withContext(Dispatchers.IO) { SystemBridge.loadCustomWallpaper(baseContext) }
+        customWallpaper = loadedWp
         val loaded = withContext(Dispatchers.IO) { SystemBridge.loadInstalledApps(baseContext) }
         allApps = loaded
     }
@@ -248,7 +246,7 @@ private fun NokiaLauncherContent(
             addAction(Intent.ACTION_TIME_CHANGED)
             addAction(Intent.ACTION_BATTERY_CHANGED)
         }
-        baseContext.registerReceiver(receiver, filter)
+        runCatching { baseContext.registerReceiver(receiver, filter) }
         onDispose { runCatching { baseContext.unregisterReceiver(receiver) } }
     }
 
@@ -294,85 +292,86 @@ private fun NokiaLauncherContent(
                 SystemBridge.launchApp(baseContext, app)
             })
         }
-        add(stringResource(R.string.shortcut_snake) to {
+        add(tr(R.string.shortcut_snake) to {
             feedback(RetroSound.SELECT)
             snakeController.reset()
             screenMode = ScreenMode.SNAKE
         })
-        add(stringResource(R.string.shortcut_manage_apps) to {
+        add(tr(R.string.shortcut_manage_apps) to {
             feedback(RetroSound.SELECT)
             selectedShortcutPickerIndex = 0
             screenMode = ScreenMode.PICK_SHORTCUT
         })
-        add(stringResource(R.string.shortcut_dialer) to {
+        add(tr(R.string.shortcut_dialer) to {
             SystemBridge.openDialer(baseContext, dialBuffer)
         })
-        add(stringResource(R.string.shortcut_messages) to {
+        add(tr(R.string.shortcut_messages) to {
             SystemBridge.openMessages(baseContext)
         })
-        add(stringResource(R.string.shortcut_camera) to {
+        add(tr(R.string.shortcut_camera) to {
             SystemBridge.openCamera(baseContext)
         })
-        add(stringResource(R.string.shortcut_torch) to {
+        add(tr(R.string.shortcut_torch) to {
             feedback(RetroSound.TORCH)
             torchOn = SystemBridge.toggleTorch(baseContext, !torchOn)
         })
-        add(stringResource(R.string.shortcut_settings) to {
+        add(tr(R.string.shortcut_settings) to {
             SystemBridge.openAndroidSettings(baseContext)
         })
     }
 
-    val onLabel = stringResource(R.string.on_label)
-    val offLabel = stringResource(R.string.off_label)
-    val settingItems = listOf(
+    val onLabel = tr(R.string.on_label)
+    val offLabel = tr(R.string.off_label)
+    val settingItems: List<Triple<String, String, () -> Unit>> = listOf(
         Triple(
-            stringResource(R.string.setting_lcd_theme),
-            stringResource(currentTheme.titleRes)
+            tr(R.string.setting_lcd_theme),
+            tr(currentTheme.titleRes)
         ) {
             themeIndex = (themeIndex + 1) % LcdTheme.entries.size
             prefs.edit().putInt("lcd_theme", themeIndex).apply()
         },
         Triple(
-            stringResource(R.string.setting_keypad_backlight),
-            stringResource(currentBacklight.titleRes)
+            tr(R.string.setting_keypad_backlight),
+            tr(currentBacklight.titleRes)
         ) {
             backlightIndex = (backlightIndex + 1) % KeypadBacklight.entries.size
             prefs.edit().putInt("keypad_backlight", backlightIndex).apply()
         },
         Triple(
-            stringResource(R.string.setting_wallpaper),
-            stringResource(currentWallpaperMode.titleRes)
+            tr(R.string.setting_wallpaper),
+            tr(currentWallpaperMode.titleRes)
         ) {
             val nextIdx = (wallpaperIndex + 1) % WallpaperMode.entries.size
             val nextMode = WallpaperMode.entries[nextIdx]
             if (nextMode == WallpaperMode.CUSTOM_IMAGE && customWallpaper == null) {
-                wallpaperPickerLauncher.launch("image/*")
+                runCatching { wallpaperPickerLauncher.launch("image/*") }
             } else {
                 wallpaperIndex = nextIdx
                 prefs.edit().putInt("wallpaper_mode", wallpaperIndex).apply()
             }
         },
         Triple(
-            stringResource(R.string.setting_pick_wallpaper),
-            stringResource(R.string.wallpaper_pick_action)
+            tr(R.string.setting_pick_wallpaper),
+            tr(R.string.wallpaper_pick_action)
         ) {
-            wallpaperPickerLauncher.launch("image/*")
+            runCatching { wallpaperPickerLauncher.launch("image/*") }
+            Unit
         },
         Triple(
-            stringResource(R.string.setting_language),
-            stringResource(currentLanguage.titleRes)
+            tr(R.string.setting_language),
+            tr(currentLanguage.titleRes)
         ) {
             onCycleLanguage()
         },
         Triple(
-            stringResource(R.string.setting_haptics),
+            tr(R.string.setting_haptics),
             if (hapticsEnabled) onLabel else offLabel
         ) {
             hapticsEnabled = !hapticsEnabled
             prefs.edit().putBoolean("haptics", hapticsEnabled).apply()
         },
         Triple(
-            stringResource(R.string.setting_sound),
+            tr(R.string.setting_sound),
             if (soundEnabled) onLabel else offLabel
         ) {
             soundEnabled = !soundEnabled
@@ -382,26 +381,26 @@ private fun NokiaLauncherContent(
             }
         },
         Triple(
-            stringResource(R.string.setting_nokia_tune),
-            stringResource(R.string.nokia_tune_play_badge)
+            tr(R.string.setting_nokia_tune),
+            tr(R.string.nokia_tune_play_badge)
         ) {
             RetroSoundEngine.play(baseContext, RetroSound.NOKIA_TUNE)
         },
         Triple(
-            stringResource(R.string.menu_title_shortcuts),
+            tr(R.string.menu_title_shortcuts),
             shortcutApps.size.toString()
         ) {
             selectedShortcutPickerIndex = 0
             screenMode = ScreenMode.PICK_SHORTCUT
         },
         Triple(
-            stringResource(R.string.setting_default_launcher),
+            tr(R.string.setting_default_launcher),
             ""
         ) {
             SystemBridge.openDefaultLauncherSettings(baseContext)
         },
         Triple(
-            stringResource(R.string.setting_android_settings),
+            tr(R.string.setting_android_settings),
             ""
         ) {
             SystemBridge.openAndroidSettings(baseContext)
@@ -423,7 +422,7 @@ private fun NokiaLauncherContent(
     ) {
         // Top chassis bezel with centered NOKIA brand mark
         Text(
-            text = stringResource(R.string.brand_header),
+            text = tr(R.string.brand_header),
             color = Color(0xFFF2F2F2),
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold,

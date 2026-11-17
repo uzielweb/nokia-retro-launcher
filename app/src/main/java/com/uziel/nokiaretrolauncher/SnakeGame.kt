@@ -26,7 +26,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -191,21 +190,21 @@ fun SnakeLcdScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = stringResource(R.string.snake_title),
+                text = tr(R.string.snake_title),
                 color = theme.ink,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = FontFamily.Monospace
             )
             Text(
-                text = stringResource(R.string.snake_score, controller.score),
+                text = tr(R.string.snake_score, controller.score),
                 color = theme.ink,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold,
                 fontFamily = FontFamily.Monospace
             )
             Text(
-                text = stringResource(R.string.snake_high_score, controller.highScore),
+                text = tr(R.string.snake_high_score, controller.highScore),
                 color = theme.ink.copy(alpha = 0.85f),
                 fontSize = 11.sp,
                 fontFamily = FontFamily.Monospace
@@ -297,7 +296,7 @@ fun SnakeLcdScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = stringResource(
+                        text = tr(
                             if (controller.isGameOver) R.string.snake_game_over else R.string.snake_paused
                         ),
                         color = theme.tabText,
@@ -307,7 +306,7 @@ fun SnakeLcdScreen(
                         textAlign = TextAlign.Center
                     )
                     Text(
-                        text = stringResource(R.string.snake_press_start),
+                        text = tr(R.string.snake_press_start),
                         color = theme.tabText.copy(alpha = 0.85f),
                         fontSize = 11.sp,
                         fontFamily = FontFamily.Monospace,
@@ -323,7 +322,7 @@ fun SnakeLcdScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            val leftText = stringResource(
+            val leftText = tr(
                 if (controller.isPaused || controller.isGameOver) R.string.softkey_start
                 else R.string.softkey_pause
             )
@@ -342,7 +341,7 @@ fun SnakeLcdScreen(
                     .padding(horizontal = 4.dp, vertical = 2.dp)
             )
             Text(
-                text = stringResource(R.string.softkey_back),
+                text = tr(R.string.softkey_back),
                 color = theme.ink,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,

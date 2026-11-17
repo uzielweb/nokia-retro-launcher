@@ -58,7 +58,6 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -149,12 +148,12 @@ fun RetroLcdScreen(
             }
             ScreenMode.GO_TO -> {
                 RetroListMenuContent(
-                    title = stringResource(R.string.menu_title_goto),
+                    title = tr(R.string.menu_title_goto),
                     theme = theme,
                     items = goToItems.map { it.first to "" },
                     selectedIndex = selectedGoToIndex,
-                    leftLabel = stringResource(R.string.softkey_select),
-                    rightLabel = stringResource(R.string.softkey_back),
+                    leftLabel = tr(R.string.softkey_select),
+                    rightLabel = tr(R.string.softkey_back),
                     onItemClick = { idx -> goToItems.getOrNull(idx)?.second?.invoke() },
                     onLeftSoftkey = { goToItems.getOrNull(selectedGoToIndex)?.second?.invoke() },
                     onRightSoftkey = onExitSubScreen
@@ -162,12 +161,12 @@ fun RetroLcdScreen(
             }
             ScreenMode.SETTINGS -> {
                 RetroListMenuContent(
-                    title = stringResource(R.string.menu_title_setting),
+                    title = tr(R.string.menu_title_setting),
                     theme = theme,
                     items = settingItems.map { it.first to it.second },
                     selectedIndex = selectedSettingIndex,
-                    leftLabel = stringResource(R.string.softkey_select),
-                    rightLabel = stringResource(R.string.softkey_back),
+                    leftLabel = tr(R.string.softkey_select),
+                    rightLabel = tr(R.string.softkey_back),
                     onItemClick = { idx -> settingItems.getOrNull(idx)?.third?.invoke() },
                     onLeftSoftkey = { settingItems.getOrNull(selectedSettingIndex)?.third?.invoke() },
                     onRightSoftkey = onExitSubScreen
@@ -175,13 +174,13 @@ fun RetroLcdScreen(
             }
             ScreenMode.PICK_SHORTCUT -> {
                 RetroListMenuContent(
-                    title = stringResource(R.string.menu_title_shortcuts),
-                    subtitle = stringResource(R.string.shortcut_hint_speed),
+                    title = tr(R.string.menu_title_shortcuts),
+                    subtitle = tr(R.string.shortcut_hint_speed),
                     theme = theme,
                     items = shortcutPickerItems,
                     selectedIndex = selectedShortcutPickerIndex,
-                    leftLabel = stringResource(R.string.softkey_select),
-                    rightLabel = stringResource(R.string.softkey_back),
+                    leftLabel = tr(R.string.softkey_select),
+                    rightLabel = tr(R.string.softkey_back),
                     onItemClick = onToggleShortcutByIndex,
                     onLeftSoftkey = { onToggleShortcutByIndex(selectedShortcutPickerIndex) },
                     onRightSoftkey = onExitSubScreen
@@ -360,7 +359,7 @@ private fun HomeLcdContent(
                     ) {
                         Icon(
                             imageVector = Icons.Filled.Search,
-                            contentDescription = stringResource(R.string.cd_search),
+                            contentDescription = tr(R.string.cd_search),
                             tint = theme.ink,
                             modifier = Modifier.size(14.dp)
                         )
@@ -368,7 +367,7 @@ private fun HomeLcdContent(
                     if (torchOn) {
                         Icon(
                             imageVector = Icons.Filled.FlashlightOn,
-                            contentDescription = stringResource(R.string.cd_torch),
+                            contentDescription = tr(R.string.cd_torch),
                             tint = theme.ink,
                             modifier = Modifier.size(13.dp)
                         )
@@ -518,7 +517,7 @@ private fun HomeLcdContent(
                 verticalAlignment = Alignment.Bottom
             ) {
                 SoftkeyText(
-                    label = stringResource(R.string.softkey_goto),
+                    label = tr(R.string.softkey_goto),
                     color = theme.ink,
                     onClick = onOpenGoTo
                 )
@@ -539,7 +538,7 @@ private fun HomeLcdContent(
                     )
                     Spacer(modifier = Modifier.height(3.dp))
                     Text(
-                        text = stringResource(R.string.softkey_menu),
+                        text = tr(R.string.softkey_menu),
                         color = theme.ink,
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Medium,
@@ -548,7 +547,7 @@ private fun HomeLcdContent(
                 }
 
                 SoftkeyText(
-                    label = stringResource(R.string.softkey_setting),
+                    label = tr(R.string.softkey_setting),
                     color = theme.ink,
                     onClick = onOpenSettings
                 )
@@ -637,7 +636,7 @@ private fun AppDrawerContent(
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Search,
-                        contentDescription = stringResource(R.string.cd_search),
+                        contentDescription = tr(R.string.cd_search),
                         tint = Color(0xFFD6D27A),
                         modifier = Modifier.size(16.dp)
                     )
@@ -646,7 +645,7 @@ private fun AppDrawerContent(
                         if (searchActive) {
                             if (searchQuery.isEmpty()) {
                                 Text(
-                                    text = stringResource(R.string.search_placeholder),
+                                    text = tr(R.string.search_placeholder),
                                     color = Color.White.copy(alpha = 0.45f),
                                     fontSize = 12.sp,
                                     fontFamily = FontFamily.Monospace
@@ -669,7 +668,7 @@ private fun AppDrawerContent(
                             )
                         } else if (t9Filter.isNotEmpty()) {
                             Text(
-                                text = stringResource(R.string.t9_filter_prefix, t9Filter),
+                                text = tr(R.string.t9_filter_prefix, t9Filter),
                                 color = Color(0xFFD6D27A),
                                 fontSize = 12.sp,
                                 fontFamily = FontFamily.Monospace,
@@ -677,7 +676,7 @@ private fun AppDrawerContent(
                             )
                         } else {
                             Text(
-                                text = stringResource(R.string.search_placeholder),
+                                text = tr(R.string.search_placeholder),
                                 color = Color.White.copy(alpha = 0.55f),
                                 fontSize = 12.sp,
                                 fontFamily = FontFamily.Monospace
@@ -687,7 +686,7 @@ private fun AppDrawerContent(
                     if (searchActive || searchQuery.isNotEmpty() || t9Filter.isNotEmpty()) {
                         Icon(
                             imageVector = Icons.Filled.Close,
-                            contentDescription = stringResource(R.string.cd_clear_search),
+                            contentDescription = tr(R.string.cd_clear_search),
                             tint = Color.White.copy(alpha = 0.8f),
                             modifier = Modifier
                                 .size(16.dp)
@@ -702,7 +701,7 @@ private fun AppDrawerContent(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = stringResource(R.string.no_apps_found),
+                            text = tr(R.string.no_apps_found),
                             color = Color.White.copy(alpha = 0.7f),
                             fontSize = 14.sp,
                             fontFamily = FontFamily.Monospace
